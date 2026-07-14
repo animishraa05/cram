@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cram"
+version = "1.0.0"
+description = "Spaced repetition TUI for problems and concepts with FSRS scheduling"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+dependencies = [
+    "textual>=0.80.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0"]
+
+[project.scripts]
+cram = "srs.app:main"
+
+[tool.setuptools.packages.find]
+include = ["srs*"]

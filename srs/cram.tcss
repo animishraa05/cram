@@ -1,0 +1,514 @@
+/* cram.tcss — Textual CSS */
+
+/* ============================================
+   Global Styles
+   ============================================ */
+
+Screen {
+    background: $surface;
+}
+
+Header {
+    background: $primary;
+    color: white;
+}
+
+/* ============================================
+   Title Bar (custom)
+   ============================================ */
+
+#title-bar {
+    background: $primary;
+    color: white;
+    padding: 0 1;
+    margin-left: 2;
+    text-style: bold;
+    width: 100%;
+}
+
+#title-bar-sub {
+    color: $text-muted;
+    padding: 0 1;
+    margin-left: 2;
+    width: 100%;
+}
+
+/* ============================================
+   Status Bar
+   ============================================ */
+
+#status-bar {
+    color: $text-muted;
+    padding: 0 0 1 2;
+    width: 100%;
+}
+
+/* ============================================
+   Home Screen
+   ============================================ */
+
+#home-container {
+    padding: 2;
+}
+
+#home-title {
+    text-style: bold;
+    color: white;
+    background: $primary;
+    padding: 0 1;
+    margin-left: 2;
+    width: 100%;
+}
+
+#home-subtitle {
+    color: $text-muted;
+    padding: 0 0 0 2;
+    width: 100%;
+    margin-bottom: 1;
+}
+
+#home-menu {
+    padding: 1 0;
+}
+
+#home-menu ListView {
+    border: solid $panel;
+}
+
+#home-menu ListItem {
+    padding: 0 2;
+}
+
+#home-stats {
+    color: $text-muted;
+    padding: 1 0 0 2;
+    width: 100%;
+}
+
+#home-footer {
+    color: $text-muted;
+    padding: 0 0 0 2;
+    dock: bottom;
+    width: 100%;
+}
+
+/* ============================================
+   Create Problem Screen
+   ============================================ */
+
+#create-container {
+    padding: 2;
+}
+
+#create-title {
+    text-style: bold;
+    color: white;
+    background: $primary;
+    padding: 0 1;
+    margin-left: 2;
+    width: 100%;
+}
+
+#create-form {
+    padding: 1 0;
+}
+
+#create-form Label {
+    text-style: bold;
+    margin-top: 1;
+}
+
+#create-form Input {
+    margin-bottom: 1;
+}
+
+/* ============================================
+   Add Problem Screen
+   ============================================ */
+
+#problem-container {
+    height: 1fr;
+}
+
+#problem-title {
+    text-style: bold;
+    color: white;
+    background: $primary;
+    padding: 0 1;
+    margin-left: 2;
+    width: 100%;
+}
+
+#problem-list-pane {
+    width: 1fr;
+    min-width: 20;
+    padding: 0 1;
+}
+
+#problem-list {
+    border: solid $panel;
+}
+
+#problem-preview-pane {
+    width: 1fr;
+    min-width: 20;
+    border-left: solid $panel;
+    padding: 0 1;
+}
+
+#problem-preview-header {
+    text-style: bold;
+    color: white;
+    background: $primary;
+    padding: 0 1;
+    margin-bottom: 1;
+    width: 100%;
+}
+
+#problem-preview-content {
+    overflow-y: auto;
+    height: 1fr;
+}
+
+#problem-preview-footer {
+    color: $text-muted;
+    padding: 1 0 0 0;
+    width: 100%;
+    border-top: solid $panel;
+    margin-top: 1;
+}
+
+/* ============================================
+   Add Concept Screen
+   ============================================ */
+
+#concept-container {
+    height: 1fr;
+}
+
+#concept-title {
+    text-style: bold;
+    color: white;
+    background: $primary;
+    padding: 0 1;
+    margin-left: 2;
+    width: 100%;
+}
+
+#concept-form-pane {
+    width: 1fr;
+    min-width: 20;
+    padding: 1 2;
+}
+
+#concept-form-pane Label {
+    text-style: bold;
+    margin-top: 1;
+}
+
+#concept-form-pane Input {
+    margin-bottom: 1;
+}
+
+#concept-preview-pane {
+    width: 1fr;
+    min-width: 20;
+    border-left: solid $panel;
+    padding: 0 1;
+}
+
+#concept-preview-header {
+    text-style: bold;
+    color: white;
+    background: $primary;
+    padding: 0 1;
+    margin-bottom: 1;
+    width: 100%;
+}
+
+#concept-preview-content {
+    overflow-y: auto;
+    height: 1fr;
+}
+
+#concept-preview-footer {
+    color: $text-muted;
+    padding: 1 0 0 0;
+    width: 100%;
+    border-top: solid $panel;
+    margin-top: 1;
+}
+
+/* ============================================
+   Review Screen
+   ============================================ */
+
+#review-container {
+    height: 1fr;
+}
+
+#review-title {
+    text-style: bold;
+    color: white;
+    background: $primary;
+    padding: 0 1;
+    margin-left: 2;
+    width: 100%;
+}
+
+#review-list-pane {
+    width: 1fr;
+    min-width: 20;
+    padding: 0 1;
+}
+
+#review-list {
+    border: solid $panel;
+}
+
+#review-preview-pane {
+    width: 1fr;
+    min-width: 20;
+    border-left: solid $panel;
+    padding: 0 1;
+}
+
+#review-preview-header {
+    text-style: bold;
+    color: white;
+    background: $primary;
+    padding: 0 1;
+    margin-bottom: 1;
+    width: 100%;
+}
+
+#review-preview-content {
+    overflow-y: auto;
+    height: 1fr;
+}
+
+#review-preview-footer {
+    color: $text-muted;
+    padding: 1 0 0 0;
+    width: 100%;
+    border-top: solid $panel;
+    margin-top: 1;
+}
+
+/* ============================================
+   List Views (shared)
+   ============================================ */
+
+ListView {
+    height: auto;
+    max-height: 25;
+    border: solid $panel;
+}
+
+ListItem {
+    padding: 0 2;
+}
+
+ListItem > Label {
+    width: 100%;
+}
+
+/* ============================================
+   Note Preview Pane
+   ============================================ */
+
+#note-preview {
+    max-height: 15;
+    overflow-y: auto;
+    border: round $panel;
+    padding: 1;
+    margin: 1 0;
+    background: $surface-darken-1;
+}
+
+/* ============================================
+   Status Text
+   ============================================ */
+
+#create-status,
+#problem-status,
+#concept-status,
+#review-status,
+#setup-status {
+    color: $text-muted;
+    padding: 1 0 0 2;
+    width: 100%;
+}
+
+/* ============================================
+   Rating Bar
+   ============================================ */
+
+#rating-bar {
+    align: center middle;
+    padding: 1 0;
+    border-top: solid $panel;
+    margin-top: 1;
+}
+
+#rating-bar Button {
+    width: 18;
+    margin: 0 1;
+}
+
+#rating-bar Button.-error {
+    background: $error;
+    color: white;
+}
+
+#rating-bar Button.-warning {
+    background: $warning;
+    color: white;
+}
+
+#rating-bar Button.-primary {
+    background: $primary;
+    color: white;
+}
+
+#rating-bar Button.-success {
+    background: $success;
+    color: white;
+}
+
+/* ============================================
+   Form Inputs
+   ============================================ */
+
+Input {
+    margin-bottom: 1;
+}
+
+Input:focus {
+    border: solid $primary;
+}
+
+Label {
+    text-style: bold;
+    margin-top: 1;
+}
+
+/* ============================================
+   Setup Screen
+   ============================================ */
+
+#setup-container {
+    width: 70;
+    max-width: 90%;
+    padding: 2 3;
+    background: $surface;
+    border: round $panel;
+}
+
+#setup-welcome {
+    text-style: bold;
+    color: white;
+    background: $primary;
+    padding: 0 1;
+    margin-bottom: 1;
+    width: 100%;
+}
+
+#setup-step {
+    color: $text-muted;
+    margin-bottom: 1;
+}
+
+/* ============================================
+   Settings Screen
+   ============================================ */
+
+#settings-overlay {
+    width: 70;
+    max-width: 90%;
+    padding: 1 2;
+    background: $surface;
+    border: round $panel;
+}
+
+#settings-title {
+    text-style: bold;
+    color: white;
+    background: $primary;
+    padding: 0 1;
+    margin-bottom: 1;
+    width: 100%;
+}
+
+#settings-columns {
+    height: auto;
+}
+
+#palette-col {
+    width: 1fr;
+    padding: 0 1;
+    border-right: solid $panel;
+}
+
+#config-col {
+    width: 1fr;
+    padding: 0 1;
+    border-right: solid $panel;
+}
+
+#theme-col {
+    width: 1fr;
+    padding: 0 1;
+}
+
+#settings-footer {
+    color: $text-muted;
+    margin-top: 1;
+    text-align: center;
+}
+
+.col-title {
+    text-style: bold;
+    margin-bottom: 1;
+}
+
+.swatch-row {
+    height: 1;
+}
+
+.theme-item {
+    height: 1;
+}
+
+.theme-item-active {
+    text-style: bold;
+    color: $primary;
+}
+
+/* ============================================
+   Buttons
+   ============================================ */
+
+Button {
+    margin: 1 0;
+}
+
+Button.-primary {
+    background: $primary;
+    color: white;
+}
+
+Button.-success {
+    background: $success;
+    color: white;
+}
+
+Button.-warning {
+    background: $warning;
+    color: white;
+}
+
+Button.-error {
+    background: $error;
+    color: white;
+}
