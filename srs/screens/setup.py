@@ -15,6 +15,10 @@ from srs import config
 class SetupScreen(Screen):
     """First-run setup: vault path, problem folder, LeetCode username, theme."""
 
+    BINDINGS = [
+        ("escape", "quit_setup", "Quit"),
+    ]
+
     CSS = """
     #setup-container {
         width: 70;
@@ -41,6 +45,14 @@ class SetupScreen(Screen):
         color: $text-muted;
         margin-bottom: 1;
     }
+    #setup-back {
+        color: $text-muted;
+        margin-top: 1;
+    }
+    #setup-footer {
+        color: $text-muted;
+        margin-top: 1;
+    }
     """
 
     def compose(self) -> ComposeResult:
@@ -54,13 +66,19 @@ class SetupScreen(Screen):
             yield Input(placeholder="Private/Daily/Problems", id="folder-input")
             yield Label("LeetCode username (optional, press Enter to skip):", id="leetcode-label")
             yield Input(placeholder="username", id="leetcode-input")
-            yield Label("Theme (tokyonight, dracula, gruvbox, nord, catppuccin, solarized, forest, default):", id="theme-label")
+            yield Label(
+                "Theme (tokyonight, dracula, gruvbox, nord, catppuccin,"
+                " solarized, forest, default):",
+                id="theme-label",
+            )
             yield Input(placeholder="tokyonight", id="theme-input")
             yield Static("", id="setup-status")
+            yield Static("<- Back (press \u2190)   Esc: quit", id="setup-footer")
 
     def on_mount(self) -> None:
         self._step = 0
         self._cfg: dict[str, str] = {}
+        self._pending_vault: Path | None = None
         self.query_one("#folder-label", Label).display = False
         self.query_one("#folder-input", Input).display = False
         self.query_one("#leetcode-label", Label).display = False
@@ -68,6 +86,50 @@ class SetupScreen(Screen):
         self.query_one("#theme-label", Label).display = False
         self.query_one("#theme-input", Input).display = False
         self.query_one("#vault-input", Input).focus()
+
+    def action_quit_setup(self) -> None:
+        self.app.exit()
+
+    def key_left(self) -> None:
+        if self._step == 0:
+            return
+        self._step -= 1
+        if self._step == 0:
+            self.query_one("#setup-step", Static).update("Step 1 of 4: Obsidian Vault")
+            self.query_one("#vault-input", Input).display = True
+            self.query_one("#vault-input", Input).value = self._cfg.get("OBSIDIAN_VAULT", "")
+            self.query_one("#vault-input", Input).focus()
+            self.query_one("#folder-label", Label).display = False
+            self.query_one("#folder-input", Input).display = False
+            self.query_one("#leetcode-label", Label).display = False
+            self.query_one("#leetcode-input", Input).display = False
+            self.query_one("#theme-label", Label).display = False
+            self.query_one("#theme-input", Input).display = False
+        elif self._step == 1:
+            self.query_one("#setup-step", Static).update("Step 2 of 4: Problem Folder")
+            self.query_one("#folder-label", Label).display = True
+            self.query_one("#folder-input", Input).display = True
+            self.query_one("#folder-input", Input).value = self._cfg.get("PROBLEM_FOLDER", "")
+            self.query_one("#folder-input", Input).focus()
+            self.query_one("#vault-input", Input).display = False
+            self.query_one("#leetcode-label", Label).display = False
+            self.query_one("#leetcode-input", Input).display = False
+            self.query_one("#theme-label", Label).display = False
+            self.query_one("#theme-input", Input).display = False
+        elif self._step == 2:
+            self.query_one("#setup-step", Static).update("Step 3 of 4: LeetCode Username")
+            self.query_one("#leetcode-input", Input).display = True
+            self.query_one("#leetcode-input", Input).value = self._cfg.get("LEETCODE_USERNAME", "")
+            self.query_one("#leetcode-input", Input).focus()
+            self.query_one("#folder-input", Input).display = False
+            self.query_one("#theme-label", Label).display = False
+            self.query_one("#theme-input", Input).display = False
+        elif self._step == 3:
+            self.query_one("#setup-step", Static).update("Step 4 of 4: Theme")
+            self.query_one("#theme-input", Input).display = True
+            self.query_one("#theme-input", Input).value = self._cfg.get("THEME", "")
+            self.query_one("#theme-input", Input).focus()
+            self.query_one("#leetcode-input", Input).display = False
 
     def on_input_submitted(self, event: Input.Submitted) -> None:
         if event.input.id == "vault-input":
@@ -80,6 +142,13 @@ class SetupScreen(Screen):
             self._handle_theme()
 
     def _handle_vault(self) -> None:
+        if self._pending_vault is not None:
+            self._pending_vault = None
+            vault_path = self.query_one("#vault-input", Input).value.strip()
+            vault = Path(vault_path).expanduser().resolve()
+            self._apply_vault(vault)
+            return
+
         vault_path = self.query_one("#vault-input", Input).value.strip()
         if not vault_path:
             self.query_one("#setup-status", Static).update("Vault path is required!")
@@ -87,17 +156,22 @@ class SetupScreen(Screen):
 
         vault = Path(vault_path).expanduser().resolve()
         if not vault.exists():
-            vault.mkdir(parents=True, exist_ok=True)
-            self.query_one("#setup-status", Static).update(f"Created: {vault}")
-        else:
-            self.query_one("#setup-status", Static).update(f"Using: {vault}")
+            self._pending_vault = vault
+            self.query_one("#setup-status", Static).update(
+                f"  Directory does not exist. Create {vault}? (press Enter to confirm)"
+            )
+            return
 
+        self._apply_vault(vault)
+
+    def _apply_vault(self, vault: Path) -> None:
+        vault.mkdir(parents=True, exist_ok=True)
         self._cfg["OBSIDIAN_VAULT"] = str(vault)
         self._step = 1
 
         self.query_one("#setup-step", Static).update("Step 2 of 4: Problem Folder")
+        self.query_one("#setup-status", Static).update(f"  Using: {vault}")
         self.query_one("#vault-input", Input).display = False
-        self.query_one(Label).display = False  # hide vault label
         self.query_one("#folder-label", Label).display = True
         self.query_one("#folder-input", Input).display = True
         self.query_one("#folder-input", Input).focus()
@@ -141,7 +215,7 @@ class SetupScreen(Screen):
         self._finish_setup()
 
     def _finish_setup(self) -> None:
-        from srs.config import save_config, cards_file
+        from srs.config import cards_file, save_config
 
         # Save config
         self._cfg["CARDS_FILE"] = str(cards_file())
@@ -151,7 +225,7 @@ class SetupScreen(Screen):
         cards_path = cards_file()
         cards_path.parent.mkdir(parents=True, exist_ok=True)
         if not cards_path.exists():
-            cards_path.write_text('{"problem_cards": [], "concept_cards": []}')
+            cards_path.write_text('{"problem_cards": [], "concept_cards": []}', encoding="utf-8")
 
         self.query_one("#setup-step", Static).update("Setup complete!")
         self.query_one("#setup-status", Static).update(

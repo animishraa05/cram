@@ -1,16 +1,13 @@
-/* cram.tcss — Textual CSS */
+/* cram.tcss — clean minimal style */
 
 /* ============================================
    Global Styles
    ============================================ */
 
-Screen {
-    background: $surface;
-}
-
 Header {
-    background: $primary;
-    color: white;
+    background: $background;
+    color: $foreground;
+    border-bottom: solid $primary;
 }
 
 /* ============================================
@@ -18,12 +15,13 @@ Header {
    ============================================ */
 
 #title-bar {
-    background: $primary;
-    color: white;
+    background: $background;
+    color: $foreground;
     padding: 0 1;
     margin-left: 2;
     text-style: bold;
     width: 100%;
+    border-bottom: solid $primary;
 }
 
 #title-bar-sub {
@@ -53,11 +51,11 @@ Header {
 
 #home-title {
     text-style: bold;
-    color: white;
-    background: $primary;
+    color: $foreground;
     padding: 0 1;
     margin-left: 2;
     width: 100%;
+    border-bottom: solid $primary;
 }
 
 #home-subtitle {
@@ -69,6 +67,7 @@ Header {
 
 #home-menu {
     padding: 1 0;
+    max-height: 20;
 }
 
 #home-menu ListView {
@@ -102,11 +101,11 @@ Header {
 
 #create-title {
     text-style: bold;
-    color: white;
-    background: $primary;
+    color: $foreground;
     padding: 0 1;
     margin-left: 2;
     width: 100%;
+    border-bottom: solid $primary;
 }
 
 #create-form {
@@ -132,11 +131,15 @@ Header {
 
 #problem-title {
     text-style: bold;
-    color: white;
-    background: $primary;
+    color: $foreground;
     padding: 0 1;
     margin-left: 2;
     width: 100%;
+    border-bottom: solid $primary;
+}
+
+#problem-split {
+    height: 1fr;
 }
 
 #problem-list-pane {
@@ -158,11 +161,11 @@ Header {
 
 #problem-preview-header {
     text-style: bold;
-    color: white;
-    background: $primary;
+    color: $foreground;
     padding: 0 1;
     margin-bottom: 1;
     width: 100%;
+    border-bottom: solid $primary;
 }
 
 #problem-preview-content {
@@ -188,11 +191,15 @@ Header {
 
 #concept-title {
     text-style: bold;
-    color: white;
-    background: $primary;
+    color: $foreground;
     padding: 0 1;
     margin-left: 2;
     width: 100%;
+    border-bottom: solid $primary;
+}
+
+#concept-split {
+    height: 1fr;
 }
 
 #concept-form-pane {
@@ -219,11 +226,11 @@ Header {
 
 #concept-preview-header {
     text-style: bold;
-    color: white;
-    background: $primary;
+    color: $foreground;
     padding: 0 1;
     margin-bottom: 1;
     width: 100%;
+    border-bottom: solid $primary;
 }
 
 #concept-preview-content {
@@ -249,11 +256,15 @@ Header {
 
 #review-title {
     text-style: bold;
-    color: white;
-    background: $primary;
+    color: $foreground;
     padding: 0 1;
     margin-left: 2;
     width: 100%;
+    border-bottom: solid $primary;
+}
+
+#review-split {
+    height: 1fr;
 }
 
 #review-list-pane {
@@ -275,11 +286,11 @@ Header {
 
 #review-preview-header {
     text-style: bold;
-    color: white;
-    background: $primary;
+    color: $foreground;
     padding: 0 1;
     margin-bottom: 1;
     width: 100%;
+    border-bottom: solid $primary;
 }
 
 #review-preview-content {
@@ -300,8 +311,7 @@ Header {
    ============================================ */
 
 ListView {
-    height: auto;
-    max-height: 25;
+    height: 1fr;
     border: solid $panel;
 }
 
@@ -313,17 +323,8 @@ ListItem > Label {
     width: 100%;
 }
 
-/* ============================================
-   Note Preview Pane
-   ============================================ */
-
-#note-preview {
-    max-height: 15;
-    overflow-y: auto;
-    border: round $panel;
-    padding: 1;
-    margin: 1 0;
-    background: $surface-darken-1;
+ListItem.-highlight {
+    outline_left: solid $accent;
 }
 
 /* ============================================
@@ -354,26 +355,6 @@ ListItem > Label {
 #rating-bar Button {
     width: 18;
     margin: 0 1;
-}
-
-#rating-bar Button.-error {
-    background: $error;
-    color: white;
-}
-
-#rating-bar Button.-warning {
-    background: $warning;
-    color: white;
-}
-
-#rating-bar Button.-primary {
-    background: $primary;
-    color: white;
-}
-
-#rating-bar Button.-success {
-    background: $success;
-    color: white;
 }
 
 /* ============================================
@@ -407,11 +388,11 @@ Label {
 
 #setup-welcome {
     text-style: bold;
-    color: white;
-    background: $primary;
+    color: $foreground;
     padding: 0 1;
     margin-bottom: 1;
     width: 100%;
+    border-bottom: solid $primary;
 }
 
 #setup-step {
@@ -433,11 +414,11 @@ Label {
 
 #settings-title {
     text-style: bold;
-    color: white;
-    background: $primary;
+    color: $foreground;
     padding: 0 1;
     margin-bottom: 1;
     width: 100%;
+    border-bottom: solid $primary;
 }
 
 #settings-columns {
@@ -494,21 +475,17 @@ Button {
 }
 
 Button.-primary {
-    background: $primary;
-    color: white;
+    border: solid $primary;
 }
 
 Button.-success {
-    background: $success;
-    color: white;
+    border: solid $success;
 }
 
 Button.-warning {
-    background: $warning;
-    color: white;
+    border: solid $warning;
 }
 
 Button.-error {
-    background: $error;
-    color: white;
+    border: solid $error;
 }

@@ -1,6 +1,6 @@
 """Tests for srs.theme — theme system."""
 
-from srs.theme import THEMES, get_theme, theme_names, Theme
+from srs.theme import THEMES, Theme, get_theme, theme_names
 
 
 def test_all_themes_have_required_fields():
@@ -35,13 +35,13 @@ def test_theme_names():
 
 def test_get_theme_valid():
     theme = get_theme("tokyonight")
-    assert theme.primary == "#6699ff"
-    assert theme.accent == "#9966ff"
+    assert theme.primary == "#7aa2f7"
+    assert theme.accent == "#7dcfff"
 
 
 def test_get_theme_unknown_returns_tokyonight():
     theme = get_theme("nonexistent_theme")
-    assert theme.primary == "#6699ff"  # tokyonight primary
+    assert theme.primary == "#7aa2f7"  # tokyonight primary
 
 
 def test_theme_colors_are_strings():

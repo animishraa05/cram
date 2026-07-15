@@ -1,8 +1,6 @@
 """Tests for srs.config — config loader."""
 
-import os
-
-from srs.config import load_config, save_config, get, config_path, invalidate_cache
+from srs.config import get, invalidate_cache, load_config, save_config
 
 
 def test_load_config_empty(tmp_path, monkeypatch):

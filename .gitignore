@@ -8,7 +8,7 @@ build/
 .env
 .venv/
 venv/
-data/cards.json
+data/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/

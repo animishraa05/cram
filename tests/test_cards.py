@@ -3,19 +3,18 @@
 from datetime import datetime, timedelta, timezone
 
 from srs.cards import (
-    make_card,
-    update_card,
-    load_cards,
-    save_cards,
+    compute_stats,
     find_card_by_id,
     find_card_by_title,
     get_due_cards,
-    retrievability,
-    next_interval,
-    initial_stability,
     initial_difficulty,
-    FACTOR,
-    DECAY,
+    initial_stability,
+    load_cards,
+    make_card,
+    next_interval,
+    retrievability,
+    save_cards,
+    update_card,
 )
 
 
@@ -183,3 +182,130 @@ def test_load_cards_nonexistent(tmp_path):
     path = tmp_path / "nonexistent.json"
     loaded = load_cards(path)
     assert loaded == {"problem_cards": [], "concept_cards": []}
+
+
+def test_update_card_hard_grade():
+    card = make_card("problem", "Test")
+    update_card(card, 2)  # Hard
+    assert card["stability"] == 0.6  # initial_stability(2) = 0.6
+    assert card["repetition"] == 1
+
+
+def test_update_card_invalid_grade():
+    card = make_card("problem", "Test")
+    try:
+        update_card(card, 0)
+        assert False, "Should have raised ValueError"
+    except ValueError:
+        pass
+    try:
+        update_card(card, 5)
+        assert False, "Should have raised ValueError"
+    except ValueError:
+        pass
+
+
+def test_initial_stability_invalid_grade():
+    try:
+        initial_stability(0)
+        assert False, "Should have raised ValueError"
+    except ValueError:
+        pass
+
+
+def test_initial_difficulty_invalid_grade():
+    try:
+        initial_difficulty(5)
+        assert False, "Should have raised ValueError"
+    except ValueError:
+        pass
+
+
+def test_review_count_increments():
+    card = make_card("problem", "Test")
+    assert card["review_count"] == 0
+    update_card(card, 3)
+    assert card["review_count"] == 1
+    update_card(card, 3)
+    assert card["review_count"] == 2
+
+
+def test_review_count_not_reset_on_again():
+    card = make_card("problem", "Test")
+    update_card(card, 3)
+    assert card["review_count"] == 1
+    update_card(card, 1)  # Again
+    assert card["review_count"] == 2
+
+
+def test_reviews_capped_at_100():
+    card = make_card("problem", "Test")
+    for _ in range(120):
+        update_card(card, 3)
+    assert len(card["reviews"]) == 100
+
+
+def test_make_card_has_review_count():
+    card = make_card("problem", "Test")
+    assert "review_count" in card
+    assert card["review_count"] == 0
+
+
+def test_make_card_no_ease_factor():
+    card = make_card("problem", "Test")
+    assert "ease_factor" not in card
+
+
+def test_find_card_by_title_concept():
+    data = {"problem_cards": [], "concept_cards": [make_card("concept", "TCP")]}
+    found = find_card_by_title(data, "tcp", "concept")
+    assert found is not None
+    assert found["title"] == "TCP"
+
+
+def test_compute_stats_empty():
+    data = {"problem_cards": [], "concept_cards": []}
+    stats = compute_stats(data)
+    assert stats["total"] == 0
+
+
+def test_compute_stats():
+    data = {
+        "problem_cards": [
+            make_card("problem", "A", topic="Array"),
+            make_card("problem", "B", topic="Array"),
+        ],
+        "concept_cards": [make_card("concept", "C", topic="Networking")],
+    }
+    stats = compute_stats(data)
+    assert stats["total"] == 3
+    assert stats["new"] == 3
+    assert stats["topics"]["Array"] == 2
+    assert stats["topics"]["Networking"] == 1
+
+
+def test_load_cards_corrupt_backup(tmp_path):
+    path = tmp_path / "cards.json"
+    path.write_text("not valid json {{{")
+    loaded = load_cards(path)
+    assert loaded == {"problem_cards": [], "concept_cards": []}
+    assert (tmp_path / "cards.json.corrupt").exists()
+
+
+def test_predict_next_intervals():
+    from srs.cards import predict_next_intervals
+    card = make_card("problem", "Test")
+    intervals = predict_next_intervals(card)
+    assert len(intervals) == 4
+    for grade in (1, 2, 3, 4):
+        assert intervals[grade] >= 1
+
+
+def test_current_retrievability():
+    from srs.cards import current_retrievability
+    card = make_card("problem", "Test")
+    assert current_retrievability(card) == 100.0
+    # After a review, retrievability decay can be computed
+    update_card(card, 3)  # Good
+    # Instantly after review, retrievability is high
+    assert current_retrievability(card) > 90.0

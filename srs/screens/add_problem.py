@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import subprocess
-import shutil
 from pathlib import Path
 
 from textual.app import ComposeResult
@@ -12,13 +10,39 @@ from textual.screen import Screen
 from textual.widgets import Input, Label, ListItem, ListView, Static
 
 from srs import cards, config
-from srs.screens.rating import Rating
+from srs.editor import find_editor, is_vim_family
 
 
 class CreateProblem(Screen):
     """Create a new problem note manually."""
 
     ESCAPE_TO_MINIMIZE = False
+
+    BINDINGS = [
+        ("escape", "go_back", "Back"),
+    ]
+
+    CSS = """
+    #create-container { height: 1fr; }
+    #create-title {
+        text-style: bold;
+        color: $foreground;
+        padding: 0 1;
+        margin-left: 2;
+        width: 100%;
+        border-bottom: solid $primary;
+    }
+    #create-form { padding: 1 0; }
+    #create-form Label { text-style: bold; margin-top: 1; }
+    #create-form Input { margin-bottom: 1; }
+    #create-status { color: $text-muted; padding: 1 0 0 2; width: 100%; }
+    #create-footer {
+        color: $text-muted;
+        padding: 0 0 0 2;
+        dock: bottom;
+        width: 100%;
+    }
+    """
 
     def compose(self) -> ComposeResult:
         with Vertical(id="create-container"):
@@ -31,10 +55,12 @@ class CreateProblem(Screen):
                 yield Label("Topic (optional):")
                 yield Input(placeholder="Array", id="topic-input")
             yield Static("", id="create-status")
-            yield Rating()
+        yield Static(
+            "  Enter: advance  Esc: back",
+            id="create-footer",
+        )
 
     def on_mount(self) -> None:
-        self.query_one(Rating).display = False
         self._card = None
         self.query_one("#title-input", Input).focus()
 
@@ -69,9 +95,13 @@ class CreateProblem(Screen):
         cards.save_cards(config.cards_file(), data)
 
         self.query_one("#create-status", Static).update(f"Created: {title}")
-        self._open_nvim(card, data)
+        self._card = card
+        self.app.call_later(self._do_open_editor, card, data)
 
-    def _open_nvim(self, card: dict, data: dict) -> None:
+    def _do_open_editor(self, card: dict, data: dict) -> None:
+        import os
+        import time
+
         from srs.templates import problem_template, sanitize_filename
 
         vault = config.vault()
@@ -79,43 +109,65 @@ class CreateProblem(Screen):
         notes_dir = vault / folder
         notes_dir.mkdir(parents=True, exist_ok=True)
 
-        filename = sanitize_filename(card["title"]) + ".md"
+        filename = sanitize_filename(card.get("title", "untitled")) + ".md"
         filepath = notes_dir / filename
 
         if not filepath.exists():
-            filepath.write_text(
-                problem_template(
-                    card["title"],
-                    card.get("link", ""),
-                    card.get("topic", ""),
+            try:
+                filepath.write_text(
+                    problem_template(
+                        card.get("title", "Untitled"),
+                        card.get("link", ""),
+                        card.get("topic", ""),
+                    ),
+                    encoding="utf-8",
                 )
-            )
+            except OSError as e:
+                self.notify(f"Failed to create file: {e}", severity="error")
+                return
 
         card["folder"] = folder
         card["filename"] = filename
         cards.save_cards(config.cards_file(), data)
-        self._card = card
 
-        self.query_one("#create-status", Static).update(f"Opening nvim: {filepath.name}")
+        self.query_one("#create-status", Static).update(f"Opening editor: {filepath.name}")
 
-        if not shutil.which("nvim"):
-            self.notify("nvim not found in PATH. Install neovim first.", severity="error")
-            self.query_one(Rating).display = True
-            self.query_one("#create-status", Static).update("Rate your recall (nvim unavailable):")
+        editor = find_editor()
+        if not editor:
+            self.notify("No editor found. Set $EDITOR or install nvim/vi.", severity="error")
+            self.query_one("#create-status", Static).update("  Rate your recall (no editor):")
+            from srs.screens.rating_dialog import RatingDialog
+
+            self.app.push_screen(RatingDialog(), self._on_rate_result)
             return
 
-        self.app.suspend()
-        try:
-            subprocess.run(["nvim", "+normal G$", "+startinsert", str(filepath)])
-        finally:
-            self.app.resume()
+        args = [editor]
+        if is_vim_family(editor):
+            args += ["+normal G$", "+startinsert"]
+        args.append(str(filepath))
+
+        pid = os.fork()
+        if pid < 0:
+            self.notify("Failed to fork process", severity="error")
+            return
+        if pid == 0:
+            try:
+                os.execvp(editor, args)
+            except OSError:
+                os._exit(1)
+        else:
+            os.waitpid(pid, 0)
+
+        time.sleep(0.1)
+        self.app.refresh()
 
         self.query_one("#create-status", Static).update("Rate your recall:")
-        self.query_one(Rating).display = True
-        self.query_one(Input, "input").display = False
+        from srs.screens.rating_dialog import RatingDialog
 
-    def on_rating_rated(self, event: Rating.Rated) -> None:
-        if not self._card:
+        self.app.push_screen(RatingDialog(), self._on_rate_result)
+
+    def _on_rate_result(self, grade: int | None) -> None:
+        if not self._card or grade is None:
             self.app.pop_screen()
             return
 
@@ -127,29 +179,13 @@ class CreateProblem(Screen):
                 break
 
         if target:
-            cards.update_card(target, event.grade, config.desired_retention())
+            cards.update_card(target, grade, config.desired_retention())
             cards.save_cards(config.cards_file(), data)
-            self.notify(f"Rated {target['title']}: grade={event.grade}")
+            self.notify(f"Rated {target.get('title', 'Unknown')}: grade={grade}")
 
         self.app.pop_screen()
 
-    def key_1(self) -> None:
-        if self.query_one(Rating).display:
-            self.post_message(Rating.Rated(1))
-
-    def key_2(self) -> None:
-        if self.query_one(Rating).display:
-            self.post_message(Rating.Rated(2))
-
-    def key_3(self) -> None:
-        if self.query_one(Rating).display:
-            self.post_message(Rating.Rated(3))
-
-    def key_4(self) -> None:
-        if self.query_one(Rating).display:
-            self.post_message(Rating.Rated(4))
-
-    def key_escape(self) -> None:
+    def action_go_back(self) -> None:
         self.app.pop_screen()
 
 
@@ -157,6 +193,48 @@ class AddProblemScreen(Screen):
     """Add Problem screen with split pane layout."""
 
     ESCAPE_TO_MINIMIZE = False
+
+    BINDINGS = [
+        ("j", "cursor_down", "Down"),
+        ("k", "cursor_up", "Up"),
+        ("escape", "go_back", "Back"),
+    ]
+
+    CSS = """
+    #problem-container { height: 1fr; }
+    #problem-split { height: 1fr; }
+    #problem-title {
+        text-style: bold;
+        color: $foreground;
+        padding: 0 1;
+        margin-left: 2;
+        width: 100%;
+        border-bottom: solid $primary;
+    }
+    #problem-list-pane { width: 1fr; min-width: 20; padding: 0 1; }
+    #problem-list { border: solid $panel; height: 1fr; }
+    #problem-preview-pane {
+        width: 1fr; min-width: 20;
+        border-left: solid $panel; padding: 0 1;
+    }
+    #problem-preview-header {
+        text-style: bold; color: $foreground;
+        padding: 0 1; margin-bottom: 1; width: 100%;
+        border-bottom: solid $primary;
+    }
+    #problem-preview-content { overflow-y: auto; height: 1fr; }
+    #problem-preview-footer {
+        color: $text-muted; padding: 1 0 0 0;
+        width: 100%; border-top: solid $panel; margin-top: 1;
+    }
+    #problem-status { color: $text-muted; padding: 1 0 0 2; width: 100%; }
+    #problem-footer {
+        color: $text-muted;
+        padding: 0 0 0 2;
+        dock: bottom;
+        width: 100%;
+    }
+    """
 
     def compose(self) -> ComposeResult:
         with Vertical(id="problem-container"):
@@ -169,10 +247,15 @@ class AddProblemScreen(Screen):
                     yield Static("", id="problem-preview-content")
                     yield Static("", id="problem-preview-footer")
             yield Static("", id="problem-status")
-            yield Rating()
+        yield Static(
+            "  j/k: navigate  o/Enter: select  Esc: back",
+            id="problem-footer",
+        )
 
     def on_mount(self) -> None:
-        self.query_one(Rating).display = False
+        self._populate_problems()
+
+    def on_screen_resume(self) -> None:
         self._populate_problems()
 
     def _populate_problems(self) -> None:
@@ -199,10 +282,20 @@ class AddProblemScreen(Screen):
             lv.append(item)
         self._problems = unsynced
 
+        if self._problems:
+            lv.index = 0
+            lv.focus()
+
         if not unsynced:
             self.query_one("#problem-status", Static).update(
                 "  No unsolved problems. Run 'cram sync' or create a new one."
             )
+
+    def action_cursor_down(self) -> None:
+        self.query_one("#problem-list", ListView).action_cursor_down()
+
+    def action_cursor_up(self) -> None:
+        self.query_one("#problem-list", ListView).action_cursor_up()
 
     def on_list_view_selected(self, event: ListView.Selected) -> None:
         idx = event.index
@@ -213,9 +306,13 @@ class AddProblemScreen(Screen):
         if idx - 1 >= len(getattr(self, "_problems", [])):
             return
         card = self._problems[idx - 1]
-        self._open_nvim(card)
+        self._rating_card_id = card.get("id")
+        self.app.call_later(self._do_open_editor, card)
 
-    def _open_nvim(self, card: dict) -> None:
+    def _do_open_editor(self, card: dict) -> None:
+        import os
+        import time
+
         from srs.templates import problem_template, sanitize_filename
 
         vault = config.vault()
@@ -223,81 +320,100 @@ class AddProblemScreen(Screen):
         notes_dir = vault / folder
         notes_dir.mkdir(parents=True, exist_ok=True)
 
-        filename = sanitize_filename(card["title"]) + ".md"
+        filename = sanitize_filename(card.get("title", "untitled")) + ".md"
         filepath = notes_dir / filename
 
         if not filepath.exists():
-            filepath.write_text(
-                problem_template(
-                    card["title"],
-                    card.get("link", ""),
-                    card.get("topic", ""),
+            try:
+                filepath.write_text(
+                    problem_template(
+                        card.get("title", "Untitled"),
+                        card.get("link", ""),
+                        card.get("topic", ""),
+                    ),
+                    encoding="utf-8",
                 )
-            )
+            except OSError as e:
+                self.notify(f"Failed to create file: {e}", severity="error")
+                return
 
         card["folder"] = folder
         card["filename"] = filename
+        data = cards.load_cards(config.cards_file())
+        for c in data.get("problem_cards", []):
+            if c.get("id") == card.get("id"):
+                c["folder"] = folder
+                c["filename"] = filename
+                break
+        cards.save_cards(config.cards_file(), data)
 
-        text = filepath.read_text()
+        try:
+            text = filepath.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError) as e:
+            text = f"(error reading file: {e})"
         preview = text[:800] + ("..." if len(text) > 800 else "")
         self.query_one("#problem-preview-content", Static).update(preview)
         self.query_one("#problem-preview-header", Static).update(f"  {filepath.name}")
-        self.query_one("#problem-status", Static).update(f"  Opening nvim: {filepath.name}")
+        self.query_one("#problem-status", Static).update(f"  Opening editor: {filepath.name}")
 
-        if not shutil.which("nvim"):
-            self.notify("nvim not found in PATH. Install neovim first.", severity="error")
-            self.query_one(Rating).display = True
-            self.query_one("#problem-status", Static).update("  Rate your recall (nvim unavailable):")
+        editor = find_editor()
+        if not editor:
+            self.notify("No editor found. Set $EDITOR or install nvim/vi.", severity="error")
+            self.query_one("#problem-status", Static).update("  Rate your recall (no editor):")
+            from srs.screens.rating_dialog import RatingDialog
+
+            self.app.push_screen(RatingDialog(), self._on_rate_result)
             return
 
-        self.app.suspend()
-        try:
-            subprocess.run(["nvim", "+normal G$", "+startinsert", str(filepath)])
-        finally:
-            self.app.resume()
+        args = [editor]
+        if is_vim_family(editor):
+            args += ["+normal G$", "+startinsert"]
+        args.append(str(filepath))
 
-        text = filepath.read_text()
+        pid = os.fork()
+        if pid < 0:
+            self.notify("Failed to fork process", severity="error")
+            return
+        if pid == 0:
+            try:
+                os.execvp(editor, args)
+            except OSError:
+                os._exit(1)
+        else:
+            os.waitpid(pid, 0)
+
+        time.sleep(0.1)
+        self.app.refresh()
+
+        try:
+            text = filepath.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError) as e:
+            text = f"(error reading file: {e})"
         preview = text[:800] + ("..." if len(text) > 800 else "")
         self.query_one("#problem-preview-content", Static).update(preview)
-        self.query_one(Rating).display = True
         self.query_one("#problem-status", Static).update("  Rate your recall:")
+        from srs.screens.rating_dialog import RatingDialog
 
-    def key_1(self) -> None:
-        if self.query_one(Rating).display:
-            self.post_message(Rating.Rated(1))
+        self.app.push_screen(RatingDialog(), self._on_rate_result)
 
-    def key_2(self) -> None:
-        if self.query_one(Rating).display:
-            self.post_message(Rating.Rated(2))
-
-    def key_3(self) -> None:
-        if self.query_one(Rating).display:
-            self.post_message(Rating.Rated(3))
-
-    def key_4(self) -> None:
-        if self.query_one(Rating).display:
-            self.post_message(Rating.Rated(4))
-
-    def key_escape(self) -> None:
+    def action_go_back(self) -> None:
         self.app.pop_screen()
 
-    def on_rating_rated(self, event: Rating.Rated) -> None:
-        data = cards.load_cards(config.cards_file())
-
-        idx = self.query_one("#problem-list").index
-        if idx == 0 or idx - 1 >= len(self._problems):
+    def _on_rate_result(self, grade: int | None) -> None:
+        if grade is None:
+            self.query_one("#problem-status", Static).update("  Rating cancelled.")
+            self.query_one("#problem-list", ListView).focus()
             return
 
-        card_id = self._problems[idx - 1].get("id")
-        target = None
-        for c in data.get("problem_cards", []):
-            if c.get("id") == card_id:
-                target = c
-                break
+        data = cards.load_cards(config.cards_file())
+        card_id = getattr(self, "_rating_card_id", None)
+        if not card_id:
+            return
 
+        target = cards.find_card_by_id(data, card_id)
         if target:
-            cards.update_card(target, event.grade, config.desired_retention())
+            cards.update_card(target, grade, config.desired_retention())
             cards.save_cards(config.cards_file(), data)
-            self.notify(f"Rated {target['title']}: grade={event.grade}")
+            self.notify(f"Rated {target.get('title', 'Unknown')}: grade={grade}")
 
         self.app.pop_screen()

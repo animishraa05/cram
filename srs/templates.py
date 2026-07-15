@@ -1,14 +1,17 @@
 """Markdown note templates for concepts and problems."""
 
-from datetime import datetime
+import re
+from datetime import datetime, timezone
 
 
 def concept_template(title: str, subject: str) -> str:
-    date = datetime.now().strftime("%Y-%m-%d")
+    safe_title = title.replace("\\", "\\\\").replace('"', '\\"')
+    safe_subject = subject.replace("\\", "\\\\").replace('"', '\\"')
+    date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     return f"""---
-title: "{title}"
+title: "{safe_title}"
 type: concept
-subject: "{subject}"
+subject: "{safe_subject}"
 tags: []
 created: {date}
 ---
@@ -39,9 +42,9 @@ created: {date}
 
 ## Self-Test
 <!-- 3 questions to verify understanding. Cover: what, why, edge case. -->
-1. 
-2. 
-3. 
+1.
+2.
+3.
 
 ## Notes
 <!-- Anything else. Insights from real usage. Links to docs. -->
@@ -50,11 +53,14 @@ created: {date}
 
 
 def problem_template(title: str, link: str, topic: str) -> str:
-    date = datetime.now().strftime("%Y-%m-%d")
+    safe_title = title.replace("\\", "\\\\").replace('"', '\\"')
+    safe_link = link.replace("\\", "\\\\").replace('"', '\\"')
+    safe_topic = topic.replace("\\", "\\\\").replace('"', '\\"')
+    date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     return f"""---
-title: "{title}"
-link: "{link}"
-topic: "{topic}"
+title: "{safe_title}"
+link: "{safe_link}"
+topic: "{safe_topic}"
 type: problem
 created: {date}
 ---
@@ -82,9 +88,8 @@ created: {date}
 
 
 def sanitize_filename(title: str) -> str:
-    import re
-
     name = title.lower().strip()
     name = re.sub(r"[^\w\s-]", "", name)
     name = re.sub(r"[\s]+", " ", name).strip()
-    return name.replace(" ", "-")
+    name = name.replace(" ", "-")
+    return name[:200] if name else "untitled"

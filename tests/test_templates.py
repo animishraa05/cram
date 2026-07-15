@@ -1,6 +1,6 @@
 """Tests for srs.templates — markdown note templates."""
 
-from srs.templates import sanitize_filename, problem_template, concept_template
+from srs.templates import concept_template, problem_template, sanitize_filename
 
 
 def test_sanitize_filename_simple():

@@ -1,13 +1,13 @@
-.PHONY: install dev uninstall clean test
+.PHONY: install dev uninstall clean test lint format
 
 install:
-	pip install .
+	pipx install .
 
 dev:
-	pip install -e .
+	pip install -e ".[dev]"
 
 uninstall:
-	pip uninstall srs -y
+	pipx uninstall cram
 
 clean:
 	rm -rf build/ dist/ *.egg-info/ .pytest_cache/ .mypy_cache/ .ruff_cache/
@@ -15,3 +15,10 @@ clean:
 
 test:
 	pytest tests/ -v
+
+lint:
+	ruff check srs/ tests/
+	mypy srs/ --ignore-missing-imports
+
+format:
+	ruff format srs/ tests/
