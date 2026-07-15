@@ -90,18 +90,25 @@ class SetupScreen(Screen):
         margin-top: 1;
     }
     #theme-list, #editor-name-list {
-        height: 10;
+        height: 12;
         border: solid $border;
         margin-bottom: 1;
+        overflow-y: auto;
     }
     #editor-custom-input {
         margin-top: 0;
         margin-bottom: 1;
     }
-    #editor-mode-list, #notify-list, #cards-loc-list, #git-warn-list {
+    #editor-mode-list, #notify-list, #git-warn-list {
         height: 4;
         border: solid $border;
         margin-bottom: 1;
+    }
+    #cards-loc-list {
+        height: 5;
+        border: solid $border;
+        margin-bottom: 1;
+        overflow-y: auto;
     }
     #anki-file-input {
         margin-bottom: 1;
@@ -286,6 +293,7 @@ class SetupScreen(Screen):
         gw.index = 0
 
         self._show_only_step(0)
+        self.query_one("#cards-loc-input", Input).display = False
         self.query_one("#vault-input", Input).focus()
 
     # ── step widget map ────────────────────────────────────────────────
@@ -298,7 +306,7 @@ class SetupScreen(Screen):
         4:  ["editor-mode-label", "editor-mode-list"],
         5:  ["theme-label", "theme-list"],
         6:  ["notify-label", "notify-list"],
-        7:  ["cards-loc-label", "cards-loc-list", "cards-loc-input"],
+        7:  ["cards-loc-label", "cards-loc-list"],
         8:  ["git-warn-box", "git-warn-label", "git-warn-list"],
         9:  ["anki-label", "anki-file-input"],
         10: ["summary-box", "confirm-btns"],
@@ -344,6 +352,11 @@ class SetupScreen(Screen):
         self.query_one("#setup-step", Static).update(self._step_label(next_step))
         if hint:
             self.query_one("#setup-status", Static).update(hint)
+        if next_step != 7:
+            try:
+                self.query_one("#cards-loc-input", Input).display = False
+            except Exception:
+                pass
         self._show_only_step(next_step)
         self._focus_step(next_step)
 
@@ -398,6 +411,14 @@ class SetupScreen(Screen):
             idx = event.list_view.index
             if idx is not None and 0 <= idx < len(names):
                 self.app.theme = f"cram-{names[idx]}"
+        elif event.list_view.id == "cards-loc-list" and self._step == 7:
+            idx = event.list_view.index or 0
+            inp = self.query_one("#cards-loc-input", Input)
+            if idx == 2:
+                inp.display = True
+                inp.focus()
+            else:
+                inp.display = False
 
     # ── step handlers ──────────────────────────────────────────────────
 
