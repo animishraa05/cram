@@ -71,7 +71,7 @@ Header {
 }
 
 #home-menu ListView {
-    border: solid $panel;
+    border: round $panel;
 }
 
 #home-menu ListItem {
@@ -145,27 +145,20 @@ Header {
 #problem-list-pane {
     width: 1fr;
     min-width: 20;
+    border: round $panel;
     padding: 0 1;
 }
 
 #problem-list {
-    border: solid $panel;
+    border: none;
 }
 
 #problem-preview-pane {
     width: 1fr;
     min-width: 20;
-    border-left: solid $panel;
-    padding: 0 1;
-}
-
-#problem-preview-header {
-    text-style: bold;
-    color: $foreground;
-    padding: 0 1;
-    margin-bottom: 1;
-    width: 100%;
-    border-bottom: solid $primary;
+    border: round $panel;
+    padding: 1 2;
+    margin-left: 1;
 }
 
 #problem-preview-content {
@@ -205,6 +198,7 @@ Header {
 #concept-form-pane {
     width: 1fr;
     min-width: 20;
+    border: round $panel;
     padding: 1 2;
 }
 
@@ -220,17 +214,9 @@ Header {
 #concept-preview-pane {
     width: 1fr;
     min-width: 20;
-    border-left: solid $panel;
-    padding: 0 1;
-}
-
-#concept-preview-header {
-    text-style: bold;
-    color: $foreground;
-    padding: 0 1;
-    margin-bottom: 1;
-    width: 100%;
-    border-bottom: solid $primary;
+    border: round $panel;
+    padding: 1 2;
+    margin-left: 1;
 }
 
 #concept-preview-content {
@@ -270,27 +256,20 @@ Header {
 #review-list-pane {
     width: 1fr;
     min-width: 20;
+    border: round $panel;
     padding: 0 1;
 }
 
 #review-list {
-    border: solid $panel;
+    border: none;
 }
 
 #review-preview-pane {
     width: 1fr;
     min-width: 20;
-    border-left: solid $panel;
-    padding: 0 1;
-}
-
-#review-preview-header {
-    text-style: bold;
-    color: $foreground;
-    padding: 0 1;
-    margin-bottom: 1;
-    width: 100%;
-    border-bottom: solid $primary;
+    border: round $panel;
+    padding: 1 2;
+    margin-left: 1;
 }
 
 #review-preview-content {

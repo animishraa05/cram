@@ -91,7 +91,6 @@ class ReviewScreen(Screen):
                 with Vertical(id="review-list-pane"):
                     yield ListView(id="review-list")
                 with Vertical(id="review-preview-pane"):
-                    yield Static("Note Preview", id="review-preview-header")
                     yield Markdown("", id="review-preview-content")
                     yield Static("", id="review-preview-footer")
             yield Static("", id="review-status")
@@ -192,10 +191,11 @@ class ReviewScreen(Screen):
         filepath = vault / folder / filename
 
         topic = card.get("topic", "")
-        label = f"  {card.get('title', 'Unknown')}"
+        title = card.get("title", "Unknown")
+        label = f" preview: {title} "
         if topic:
-            label += f" [{topic}]"
-        self.query_one("#review-preview-header", Static).update(label)
+            label = f" preview: {title} [{topic}] "
+        self.query_one("#review-preview-pane", Vertical).border_title = label
 
         if filepath.exists():
             try:

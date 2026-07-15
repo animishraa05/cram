@@ -73,7 +73,6 @@ class AddConceptScreen(Screen):
                     yield Label("Concept title:")
                     yield Input(placeholder="Title", id="title-input")
                 with Vertical(id="concept-preview-pane"):
-                    yield Static("Note Preview", id="concept-preview-header")
                     yield Markdown("", id="concept-preview-content")
                     yield Static("", id="concept-preview-footer")
             yield Static("", id="concept-status")
@@ -191,6 +190,7 @@ class AddConceptScreen(Screen):
             text = f"(error reading file: {e})"
         preview = text[:800] + ("..." if len(text) > 800 else "")
         self.query_one("#concept-preview-content", Markdown).update(preview)
+        self.query_one("#concept-preview-pane", Vertical).border_title = f" preview: {filename} "
         self.query_one("#concept-status", Static).update("  Rate your recall:")
         from srs.screens.rating_dialog import RatingDialog
 

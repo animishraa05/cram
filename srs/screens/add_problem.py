@@ -249,7 +249,6 @@ class AddProblemScreen(Screen):
                 with Vertical(id="problem-list-pane"):
                     yield ListView(id="problem-list")
                 with Vertical(id="problem-preview-pane"):
-                    yield Static("Note Preview", id="problem-preview-header")
                     yield Markdown("", id="problem-preview-content")
                     yield Static("", id="problem-preview-footer")
             yield Static("", id="problem-status")
@@ -361,7 +360,9 @@ class AddProblemScreen(Screen):
             text = f"(error reading file: {e})"
         preview = text[:800] + ("..." if len(text) > 800 else "")
         self.query_one("#problem-preview-content", Markdown).update(preview)
-        self.query_one("#problem-preview-header", Static).update(f"  {filepath.name}")
+        self.query_one(
+            "#problem-preview-pane", Vertical
+        ).border_title = f" preview: {filepath.name} "
         self.query_one("#problem-status", Static).update(f"  Opening editor: {filepath.name}")
 
         editor = find_editor()

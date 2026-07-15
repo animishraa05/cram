@@ -38,16 +38,12 @@ class BrowseScreen(Screen):
     }
     #browse-search { margin: 1 2; }
     #browse-filters { padding: 0 2; }
-    #browse-list-pane { width: 2fr; min-width: 20; padding: 0 1; }
-    #browse-list { border: solid $panel; height: 1fr; }
+    #browse-list-pane { width: 2fr; min-width: 20; border: round $panel; padding: 0 1; }
+    #browse-list { border: none; height: 1fr; }
     #browse-detail-pane {
         width: 1fr; min-width: 20;
-        border-left: solid $panel; padding: 0 1;
-    }
-    #browse-detail-header {
-        text-style: bold; color: $foreground;
-        padding: 0 1; margin-bottom: 1; width: 100%;
-        border-bottom: solid $primary;
+        border: round $panel; padding: 1 2;
+        margin-left: 1;
     }
     #browse-detail-content { overflow-y: auto; height: 1fr; }
     #browse-status { color: $text-muted; padding: 1 0 0 2; width: 100%; }
@@ -74,7 +70,6 @@ class BrowseScreen(Screen):
                 with Vertical(id="browse-list-pane"):
                     yield ListView(id="browse-list")
                 with Vertical(id="browse-detail-pane"):
-                    yield Static("Card Detail", id="browse-detail-header")
                     yield Markdown("", id="browse-detail-content")
                     yield Input(placeholder="New topic...", id="browse-topic-input")
             yield Static("", id="browse-status")
@@ -97,7 +92,7 @@ class BrowseScreen(Screen):
         self._selected_card = None
         self._pending_delete = None
         self.query_one("#browse-topic-input", Input).display = False
-        self.query_one("#browse-detail-header", Static).update("Card Detail")
+        self.query_one("#browse-detail-pane", Vertical).border_title = " detail "
         self.query_one("#browse-detail-content", Markdown).update("")
 
     def _refresh_list(self, clear_detail: bool = True) -> None:
@@ -213,7 +208,9 @@ class BrowseScreen(Screen):
                 lines.append("### Note Preview")
                 lines.append(preview)
 
-        self.query_one("#browse-detail-header", Static).update(f"  {card.get('title', '')}")
+        self.query_one(
+            "#browse-detail-pane", Vertical
+        ).border_title = f" detail: {card.get('title', '')} "
         self.query_one("#browse-detail-content", Markdown).update("\n".join(lines))
 
     def action_delete_card(self) -> None:
