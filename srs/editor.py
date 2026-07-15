@@ -9,9 +9,20 @@ import shutil
 def find_editor() -> str | None:
     """Find the best available editor.
 
-    Resolution order: $VISUAL > $EDITOR > nvim > vim > vi
+    Resolution order:
+      1. EDITOR key in ~/.config/cram/config (set during setup)
+      2. $VISUAL environment variable
+      3. $EDITOR environment variable
+      4. nvim → vim → vi (auto-detect)
+
     Returns the command name, or None if no editor found.
     """
+    from srs.config import preferred_editor
+
+    configured = preferred_editor().strip()
+    if configured:
+        return configured
+
     for var in ("VISUAL", "EDITOR"):
         editor = os.environ.get(var, "").strip()
         if editor:

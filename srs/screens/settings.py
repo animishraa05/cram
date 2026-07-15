@@ -41,6 +41,8 @@ class SettingsScreen(Screen):
                     yield Input(placeholder="true", id="notify-input")
                     yield Label("Notify Interval (seconds):")
                     yield Input(placeholder="3600", id="interval-input")
+                    yield Label("Editor Command (e.g. nvim, vim, code):")
+                    yield Input(placeholder="nvim", id="editor-cmd-input")
                     yield Label("Editor Mode (external/embedded):")
                     yield Input(placeholder="external", id="editor-mode-input")
                 with Vertical(id="right-col"):
@@ -94,6 +96,7 @@ class SettingsScreen(Screen):
         self.query_one("#retention-input", Input).value = str(config.desired_retention())
         self.query_one("#notify-input", Input).value = str(config.notify_enabled()).lower()
         self.query_one("#interval-input", Input).value = str(config.notify_interval())
+        self.query_one("#editor-cmd-input", Input).value = config.preferred_editor()
         self.query_one("#editor-mode-input", Input).value = config.editor_mode()
 
     def _build_theme_list(self) -> None:
@@ -137,6 +140,7 @@ class SettingsScreen(Screen):
             "DESIRED_RETENTION": self.query_one("#retention-input", Input).value.strip(),
             "NOTIFY_ENABLED": self.query_one("#notify-input", Input).value.strip(),
             "NOTIFY_INTERVAL": self.query_one("#interval-input", Input).value.strip(),
+            "EDITOR": self.query_one("#editor-cmd-input", Input).value.strip(),
             "EDITOR_MODE": self.query_one("#editor-mode-input", Input).value.strip(),
             "THEME": self._new_theme,
             "CARDS_FILE": str(config.cards_file()),

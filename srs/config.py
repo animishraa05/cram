@@ -116,3 +116,8 @@ def is_configured() -> bool:
 def editor_mode() -> str:
     mode = get("EDITOR_MODE", "external").lower().strip()
     return mode if mode in ("external", "embedded") else "external"
+
+
+def preferred_editor() -> str:
+    """Return the user-configured editor command, or empty string if not set."""
+    return get("EDITOR", "")

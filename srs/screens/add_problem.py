@@ -284,9 +284,13 @@ class AddProblemScreen(Screen):
         self.query_one("#problem-list-pane", Vertical).border_title = " cards "
 
     def on_screen_resume(self) -> None:
-        self._populate_problems()
+        self.call_after_refresh(self._populate_problems)
 
     def _populate_problems(self) -> None:
+        lv = self.query_one("#problem-list", ListView)
+        if not lv.is_attached:
+            return
+
         data = cards.load_cards(config.cards_file())
         folder = Path(config.problem_folder())
         vault = config.vault()
@@ -304,7 +308,6 @@ class AddProblemScreen(Screen):
             title = c.get("title", "Unknown")
             items.append(ListItem(Label(f"{title} [{topic}]")))
 
-        lv = self.query_one("#problem-list", ListView)
         lv.clear()
         for item in items:
             lv.append(item)

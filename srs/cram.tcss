@@ -373,6 +373,7 @@ Label {
     padding: 2 3;
     background: $surface;
     border: round $panel;
+    overflow-y: auto;
 }
 
 #setup-welcome {
