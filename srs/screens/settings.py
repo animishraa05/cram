@@ -5,7 +5,7 @@ from __future__ import annotations
 from textual.app import ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.screen import Screen
-from textual.widgets import Input, Label, Static
+from textual.widgets import Input, Label, ListItem, ListView, Static
 
 from srs import config
 from srs.theme import THEMES, get_theme
@@ -17,8 +17,8 @@ class SettingsScreen(Screen):
     ESCAPE_TO_MINIMIZE = False
 
     BINDINGS = [
-        ("j", "theme_down", "Theme Next"),
-        ("k", "theme_up", "Theme Prev"),
+        ("ctrl+h", "focus_left", "Focus Config"),
+        ("ctrl+l", "focus_right", "Focus Theme"),
         ("ctrl+s", "save_settings", "Save"),
         ("escape", "go_back", "Back"),
     ]
@@ -27,7 +27,6 @@ class SettingsScreen(Screen):
         with Vertical(id="settings-overlay"):
             yield Static("cram Settings", id="settings-title", classes="col-title")
             with Horizontal(id="settings-columns"):
-                yield Vertical(id="palette-col")
                 with Vertical(id="config-col"):
                     yield Static("Config", classes="col-title")
                     yield Label("Vault:")
@@ -42,8 +41,15 @@ class SettingsScreen(Screen):
                     yield Input(placeholder="true", id="notify-input")
                     yield Label("Notify Interval (seconds):")
                     yield Input(placeholder="3600", id="interval-input")
-                yield Vertical(id="theme-col")
-            yield Static("j/k: theme  ctrl+s: save  Esc: back", id="settings-footer")
+                with Vertical(id="right-col"):
+                    with Vertical(id="theme-col"):
+                        yield Static("Theme Selection", classes="col-title")
+                        yield ListView(id="theme-list")
+                    yield Vertical(id="palette-col")
+            yield Static(
+                "ctrl+h: config  ctrl+l: themes  j/k: select theme  ctrl+s: save  Esc: back",
+                id="settings-footer",
+            )
 
     def on_mount(self) -> None:
         self._selected_idx = 0
@@ -88,39 +94,32 @@ class SettingsScreen(Screen):
         self.query_one("#interval-input", Input).value = str(config.notify_interval())
 
     def _build_theme_list(self) -> None:
-        col = self.query_one("#theme-col", Vertical)
-        col.remove_children()
+        theme_list = self.query_one("#theme-list", ListView)
+        theme_list.clear()
 
-        col.mount(Static("Theme", classes="col-title"))
-
-        for name in THEMES.keys():
-            if name == self._new_theme:
-                item = Static(f"\u25cf {name}", classes="theme-item theme-item-active")
-            else:
-                item = Static(f"  {name}", classes="theme-item")
-            col.mount(item)
-
-    def _input_focused(self) -> bool:
-        focused = self.app.focused
-        return focused is not None and isinstance(focused, Input)
-
-    def action_theme_down(self) -> None:
-        if self._input_focused():
-            return
         themes = list(THEMES.keys())
-        self._selected_idx = min(self._selected_idx + 1, len(themes) - 1)
-        self._new_theme = themes[self._selected_idx]
-        self._build_palette()
-        self._build_theme_list()
+        for name in themes:
+            theme_list.append(ListItem(Label(name), id=f"theme-{name}"))
 
-    def action_theme_up(self) -> None:
-        if self._input_focused():
-            return
-        themes = list(THEMES.keys())
-        self._selected_idx = max(self._selected_idx - 1, 0)
-        self._new_theme = themes[self._selected_idx]
-        self._build_palette()
-        self._build_theme_list()
+        if self._new_theme in themes:
+            idx = themes.index(self._new_theme)
+            theme_list.index = idx
+            self._selected_idx = idx
+
+    def on_list_view_highlighted(self, event: ListView.Highlighted) -> None:
+        if event.list_view.id == "theme-list" and event.item is not None:
+            themes = list(THEMES.keys())
+            idx = event.list_view.index
+            if idx is not None and 0 <= idx < len(themes):
+                self._selected_idx = idx
+                self._new_theme = themes[idx]
+                self._build_palette()
+
+    def action_focus_left(self) -> None:
+        self.query_one("#vault-input", Input).focus()
+
+    def action_focus_right(self) -> None:
+        self.query_one("#theme-list", ListView).focus()
 
     def action_go_back(self) -> None:
         self.app.pop_screen()
@@ -141,4 +140,5 @@ class SettingsScreen(Screen):
         save_config(cfg)
         invalidate_cache()
         self.notify("Settings saved")
+        self.app.theme = f"cram-{self._new_theme}"
         self.app.pop_screen()

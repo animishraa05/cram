@@ -5,7 +5,7 @@ from __future__ import annotations
 from textual.app import ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.screen import Screen
-from textual.widgets import Input, Label, ListItem, ListView, Static
+from textual.widgets import Input, Label, ListItem, ListView, Markdown, Static
 
 from srs import cards, config
 
@@ -75,7 +75,7 @@ class BrowseScreen(Screen):
                     yield ListView(id="browse-list")
                 with Vertical(id="browse-detail-pane"):
                     yield Static("Card Detail", id="browse-detail-header")
-                    yield Static("", id="browse-detail-content")
+                    yield Markdown("", id="browse-detail-content")
                     yield Input(placeholder="New topic...", id="browse-topic-input")
             yield Static("", id="browse-status")
         yield Static(
@@ -89,6 +89,8 @@ class BrowseScreen(Screen):
         self._selected_card: dict | None = None
         self._pending_delete: dict | None = None
         self.query_one("#browse-topic-input", Input).display = False
+        self.query_one("#browse-detail-pane", Vertical).border_title = " detail "
+        self.query_one("#browse-list-pane", Vertical).border_title = " cards "
         self._refresh_list()
 
     def _clear_selection(self) -> None:
@@ -96,7 +98,7 @@ class BrowseScreen(Screen):
         self._pending_delete = None
         self.query_one("#browse-topic-input", Input).display = False
         self.query_one("#browse-detail-header", Static).update("Card Detail")
-        self.query_one("#browse-detail-content", Static).update("")
+        self.query_one("#browse-detail-content", Markdown).update("")
 
     def _refresh_list(self, clear_detail: bool = True) -> None:
         data = cards.load_cards(config.cards_file())
@@ -178,18 +180,22 @@ class BrowseScreen(Screen):
         self._pending_delete = None
         self.query_one("#browse-topic-input", Input).display = False
 
+        from srs.cards import current_retrievability
+
+        prob = current_retrievability(card)
         lines = [
-            f"  Type      {card.get('type', '')}",
-            f"  Topic     {card.get('topic', '') or '(none)'}",
-            f"  Reviews   {card.get('review_count', 0)}",
-            f"  Interval  {card.get('interval', 1)} days",
+            f"**Type:** {card.get('type', '')}",
+            f"**Topic:** {card.get('topic', '') or '(none)'}",
+            f"**Reviews:** {card.get('review_count', 0)}",
+            f"**Interval:** {card.get('interval', 1)} days",
+            f"**Recall Prob:** {prob:.1f}%",
         ]
         link = card.get("link", "")
         if link:
-            lines.append(f"  Link      {link}")
+            lines.append(f"**Link:** {link}")
         nr = card.get("next_review", "")
         if nr:
-            lines.append(f"  Next rev  {nr[:10]}")
+            lines.append(f"**Next Review:** {nr[:10]}")
 
         vault = config.vault()
         folder = card.get("folder") or config.problem_folder()
@@ -203,11 +209,12 @@ class BrowseScreen(Screen):
                     text = f"(error reading file: {e})"
                 preview = text[:600] + ("..." if len(text) > 600 else "")
                 lines.append("")
-                lines.append("  --- Note Preview ---")
+                lines.append("---")
+                lines.append("### Note Preview")
                 lines.append(preview)
 
         self.query_one("#browse-detail-header", Static).update(f"  {card.get('title', '')}")
-        self.query_one("#browse-detail-content", Static).update("\n".join(lines))
+        self.query_one("#browse-detail-content", Markdown).update("\n".join(lines))
 
     def action_delete_card(self) -> None:
         if self._selected_card:
@@ -219,8 +226,8 @@ class BrowseScreen(Screen):
             return
         self._pending_delete = card
         title = card.get("title", "Unknown")
-        self.query_one("#browse-detail-content", Static).update(
-            f"  Delete '{title}'?\n\n  Press [y] to confirm, [Esc] to cancel"
+        self.query_one("#browse-detail-content", Markdown).update(
+            f"Delete '{title}'?\n\nPress [y] to confirm, [Esc] to cancel"
         )
 
     def action_confirm_delete(self) -> None:
@@ -256,9 +263,9 @@ class BrowseScreen(Screen):
         topic_input.value = card.get("topic", "")
         topic_input.display = True
         topic_input.focus()
-        self.query_one("#browse-detail-content", Static).update(
-            f"  Editing topic for: {card.get('title', '')}\n"
-            f"  Enter new topic, then press Enter. Esc to cancel."
+        self.query_one("#browse-detail-content", Markdown).update(
+            f"Editing topic for: {card.get('title', '')}\n\n"
+            f"Enter new topic, then press Enter. Esc to cancel."
         )
 
     def on_input_submitted(self, event: Input.Submitted) -> None:

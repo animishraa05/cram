@@ -83,7 +83,11 @@ def get_recent_ac_submissions(username: str, limit: int = 50) -> list[dict]:
     }
     """
     result = graphql_query(query, {"username": username, "limit": limit})
-    return result.get("data", {}).get("recentAcSubmissionList", [])
+    errors = result.get("errors")
+    if errors:
+        raise LeetCodeAPIError(errors[0].get("message", "GraphQL Error"))
+    data = result.get("data") or {}
+    return data.get("recentAcSubmissionList", [])
 
 
 def get_problem_tags(title_slug: str) -> list[str]:
@@ -98,7 +102,11 @@ def get_problem_tags(title_slug: str) -> list[str]:
     }
     """
     result = graphql_query(query, {"titleSlug": title_slug})
-    question = result.get("data", {}).get("question")
+    errors = result.get("errors")
+    if errors:
+        raise LeetCodeAPIError(errors[0].get("message", "GraphQL Error"))
+    data = result.get("data") or {}
+    question = data.get("question")
     if question:
         return [t["name"] for t in question.get("topicTags", [])]
     return []

@@ -5,7 +5,7 @@ from __future__ import annotations
 from textual.app import ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.screen import Screen
-from textual.widgets import Label, ListItem, ListView, Static
+from textual.widgets import Label, ListItem, ListView, Markdown, Static
 
 from srs import cards, config
 
@@ -92,7 +92,7 @@ class ReviewScreen(Screen):
                     yield ListView(id="review-list")
                 with Vertical(id="review-preview-pane"):
                     yield Static("Note Preview", id="review-preview-header")
-                    yield Static("", id="review-preview-content")
+                    yield Markdown("", id="review-preview-content")
                     yield Static("", id="review-preview-footer")
             yield Static("", id="review-status")
         yield Static(
@@ -102,10 +102,16 @@ class ReviewScreen(Screen):
 
     def on_mount(self) -> None:
         self._populate_due()
+        self.query_one("#review-preview-pane", Vertical).border_title = " preview "
 
     def _populate_due(self) -> None:
         data = cards.load_cards(config.cards_file())
         self._due = cards.get_due_cards(data)
+        try:
+            due_pane = self.query_one("#review-list-pane", Vertical)
+            due_pane.border_title = f" due ({len(self._due)} cards) "
+        except Exception:
+            pass
 
         if not self._due:
             all_cards = []
@@ -197,14 +203,24 @@ class ReviewScreen(Screen):
             except (OSError, UnicodeDecodeError) as e:
                 text = f"(error reading file: {e})"
             preview = text[:800] + ("..." if len(text) > 800 else "")
-            self.query_one("#review-preview-content", Static).update(preview)
+            self.query_one("#review-preview-content", Markdown).update(preview)
         else:
-            self.query_one("#review-preview-content", Static).update("  (note file not found)")
+            self.query_one("#review-preview-content", Markdown).update("  (note file not found)")
+
+        # Calculate and display retrievability (probability of recall)
+        from srs.cards import current_retrievability
+
+        prob = current_retrievability(card)
+        footer = self.query_one("#review-preview-footer", Static)
+        footer.update(f"  Recall Probability: {prob:.1f}%")
 
         self.query_one("#review-status", Static).update("  Rate your recall:")
         from srs.screens.rating_dialog import RatingDialog
 
-        self.app.push_screen(RatingDialog(), self._on_rate_result)
+        self.app.push_screen(
+            RatingDialog(card, config.desired_retention()),
+            self._on_rate_result,
+        )
 
     def _on_rate_result(self, grade: int | None) -> None:
         if grade is None:

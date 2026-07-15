@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from textual.app import ComposeResult
-from textual.containers import Vertical
+from textual.containers import Horizontal, Vertical
 from textual.screen import Screen
 from textual.widgets import Label, ListItem, ListView, Static
 
@@ -11,7 +11,7 @@ from srs import cards, config
 
 
 class HomeScreen(Screen):
-    """Home screen with styled title bar and menu."""
+    """Home screen with dashboard telemetry."""
 
     BINDINGS = [
         ("j", "cursor_down", "Down"),
@@ -20,7 +20,8 @@ class HomeScreen(Screen):
 
     CSS = """
     #home-container {
-        padding: 2;
+        padding: 1;
+        height: 1fr;
     }
     #home-title {
         text-style: bold;
@@ -29,23 +30,55 @@ class HomeScreen(Screen):
         margin-left: 2;
         width: 100%;
         border-bottom: solid $primary;
-    }
-    #home-subtitle {
-        color: $text-muted;
-        padding: 0 0 0 2;
-        width: 100%;
         margin-bottom: 1;
     }
+    #home-split {
+        height: 1fr;
+    }
+    #home-menu-pane {
+        width: 35%;
+        height: 1fr;
+        margin-right: 1;
+    }
     #home-menu {
-        border: solid $panel;
+        height: 1fr;
+        border: round $panel;
+    }
+    #home-menu ListView {
+        border: none;
     }
     #home-menu ListItem {
         padding: 0 2;
     }
-    #home-stats {
-        color: $text-muted;
-        padding: 1 0 0 2;
-        width: 100%;
+    #home-dashboard-pane {
+        width: 65%;
+        height: 1fr;
+    }
+    #home-due-status {
+        border: round $panel;
+        height: 3;
+        background: $surface;
+        content-align: center middle;
+        margin-bottom: 1;
+    }
+    #home-stats-grid {
+        height: 7;
+        margin-bottom: 1;
+    }
+    #home-stats-details {
+        border: round $panel;
+        width: 1fr;
+        height: 1fr;
+        margin-right: 1;
+    }
+    #home-config-details {
+        border: round $panel;
+        width: 1fr;
+        height: 1fr;
+    }
+    #home-topics-details {
+        border: round $panel;
+        height: 6;
     }
     #home-footer {
         color: $text-muted;
@@ -57,18 +90,24 @@ class HomeScreen(Screen):
 
     def compose(self) -> ComposeResult:
         with Vertical(id="home-container"):
-            yield Static("  cram", id="home-title")
-            yield Static("  spaced repetition for problems & concepts", id="home-subtitle")
-            yield ListView(
-                ListItem(Label("Add Problem")),
-                ListItem(Label("Add Concept")),
-                ListItem(Label("Review Due")),
-                ListItem(Label("Browse Cards")),
-                ListItem(Label("Sync LeetCode")),
-                ListItem(Label("Settings")),
-                id="home-menu",
-            )
-            yield Static("", id="home-stats")
+            yield Static("cram  spaced repetition", id="home-title")
+            with Horizontal(id="home-split"):
+                with Vertical(id="home-menu-pane"):
+                    yield ListView(
+                        ListItem(Label("Add Problem")),
+                        ListItem(Label("Add Concept")),
+                        ListItem(Label("Review Due")),
+                        ListItem(Label("Browse Cards")),
+                        ListItem(Label("Sync LeetCode")),
+                        ListItem(Label("Settings")),
+                        id="home-menu",
+                    )
+                with Vertical(id="home-dashboard-pane"):
+                    yield Static("", id="home-due-status")
+                    with Horizontal(id="home-stats-grid"):
+                        yield Static("", id="home-stats-details")
+                        yield Static("", id="home-config-details")
+                    yield Static("", id="home-topics-details")
         yield Static(
             "  j/k: navigate  o/Enter: select  q: quit",
             id="home-footer",
@@ -82,33 +121,77 @@ class HomeScreen(Screen):
 
     def on_mount(self) -> None:
         self._update_stats()
+        self.query_one("#home-menu", ListView).border_title = " cram menu "
+        self.query_one("#home-due-status", Static).border_title = " status "
+        self.query_one("#home-stats-details", Static).border_title = " stats "
+        self.query_one("#home-config-details", Static).border_title = " system "
+        self.query_one("#home-topics-details", Static).border_title = " focus "
 
-    def on_screen_resume(self) -> None:
+    def _on_screen_resume(self) -> None:
         self._update_stats()
 
     def _update_stats(self) -> None:
         data = cards.load_cards(config.cards_file())
         stats = cards.compute_stats(data)
+
+        # 1. Update due status
         try:
-            stats_line = self.query_one("#home-stats", Static)
+            due_status = self.query_one("#home-due-status", Static)
+            if stats["due"] > 0:
+                due_status.update(f"[bold red][!] {stats['due']} review(s) due[/]")
+            else:
+                due_status.update("[bold green][x] All caught up[/]")
         except Exception:
-            return
-        if stats["total"] == 0:
-            stats_line.update("  No cards yet. Add a problem or concept to get started.")
-        else:
-            due_str = f"{stats['due']} due" if stats["due"] > 0 else "all caught up"
-            parts = [f"{stats['total']} cards", due_str]
-            if stats["new"] > 0:
-                parts.append(f"{stats['new']} new")
+            pass
+
+        # 2. Update stats details
+        try:
+            stats_details = self.query_one("#home-stats-details", Static)
+            lines = [
+                f"Total Cards : {stats['total']}",
+                f"Reviewed    : {stats['reviewed']}",
+                f"New Cards   : {stats['new']}",
+                f"Avg Interval: {stats['avg_interval']}d",
+            ]
+            stats_details.update("\n".join(lines))
+        except Exception:
+            pass
+
+        # 3. Update config details
+        try:
+            config_details = self.query_one("#home-config-details", Static)
+            # Truncate vault path if it's too long
+            vault_str = str(config.vault())
+            if len(vault_str) > 22:
+                vault_str = "..." + vault_str[-19:]
+            lines = [
+                f"Vault: {vault_str}",
+                f"User : {config.leetcode_username() or '(none)'}",
+            ]
+            config_details.update("\n".join(lines))
+        except Exception:
+            pass
+
+        # 4. Update topics
+        try:
+            topics_details = self.query_one("#home-topics-details", Static)
             topics = stats.get("topics", {})
             if topics:
-                top = list(topics.items())[:3]
-                topic_str = ", ".join(f"{t}({n})" for t, n in top)
-                parts.append(f"top: {topic_str}")
-            stats_line.update("  " + "  ·  ".join(parts))
+                lines = []
+                for topic, count in list(topics.items())[:3]:
+                    lines.append(f"* {topic}: {count}")
+                topics_details.update("\n".join(lines))
+            else:
+                topics_details.update("No categories reviewed yet.")
+        except Exception:
+            pass
 
     def on_list_view_selected(self, event: ListView.Selected) -> None:
-        match event.index:
+        if event.index is not None:
+            self._navigate_to(event.index)
+
+    def _navigate_to(self, index: int) -> None:
+        match index:
             case 0:
                 self.app.push_screen("add-problem")
             case 1:
@@ -128,7 +211,7 @@ class HomeScreen(Screen):
             self.notify("LEETCODE_USERNAME not set in config", severity="error")
             return
 
-        self.query_one("#home-stats", Static).update("  Syncing...")
+        self.query_one("#home-due-status", Static).update("Syncing...")
         self.run_worker(self._sync_worker, thread=True, exclusive=True)
 
     def _sync_worker(self) -> None:

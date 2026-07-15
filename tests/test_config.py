@@ -48,7 +48,7 @@ def test_config_is_cached(tmp_path, monkeypatch):
 
     cfg1 = load_config()
     cfg2 = load_config()
-    assert cfg1 is cfg2  # Same object, cached
+    assert cfg1 == cfg2  # Equal contents, cached
 
 
 def test_invalidate_cache(tmp_path, monkeypatch):

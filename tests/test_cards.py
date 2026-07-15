@@ -294,6 +294,7 @@ def test_load_cards_corrupt_backup(tmp_path):
 
 def test_predict_next_intervals():
     from srs.cards import predict_next_intervals
+
     card = make_card("problem", "Test")
     intervals = predict_next_intervals(card)
     assert len(intervals) == 4
@@ -303,6 +304,7 @@ def test_predict_next_intervals():
 
 def test_current_retrievability():
     from srs.cards import current_retrievability
+
     card = make_card("problem", "Test")
     assert current_retrievability(card) == 100.0
     # After a review, retrievability decay can be computed

@@ -7,7 +7,7 @@ from pathlib import Path
 from textual.app import ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.screen import Screen
-from textual.widgets import Input, Label, ListItem, ListView, Static
+from textual.widgets import Input, Label, ListItem, ListView, Markdown, Static
 
 from srs import cards, config
 from srs.editor import find_editor, is_vim_family
@@ -138,7 +138,10 @@ class CreateProblem(Screen):
             self.query_one("#create-status", Static).update("  Rate your recall (no editor):")
             from srs.screens.rating_dialog import RatingDialog
 
-            self.app.push_screen(RatingDialog(), self._on_rate_result)
+            self.app.push_screen(
+                RatingDialog(self._card, config.desired_retention()),
+                self._on_rate_result,
+            )
             return
 
         args = [editor]
@@ -164,7 +167,10 @@ class CreateProblem(Screen):
         self.query_one("#create-status", Static).update("Rate your recall:")
         from srs.screens.rating_dialog import RatingDialog
 
-        self.app.push_screen(RatingDialog(), self._on_rate_result)
+        self.app.push_screen(
+            RatingDialog(self._card, config.desired_retention()),
+            self._on_rate_result,
+        )
 
     def _on_rate_result(self, grade: int | None) -> None:
         if not self._card or grade is None:
@@ -244,7 +250,7 @@ class AddProblemScreen(Screen):
                     yield ListView(id="problem-list")
                 with Vertical(id="problem-preview-pane"):
                     yield Static("Note Preview", id="problem-preview-header")
-                    yield Static("", id="problem-preview-content")
+                    yield Markdown("", id="problem-preview-content")
                     yield Static("", id="problem-preview-footer")
             yield Static("", id="problem-status")
         yield Static(
@@ -254,6 +260,8 @@ class AddProblemScreen(Screen):
 
     def on_mount(self) -> None:
         self._populate_problems()
+        self.query_one("#problem-preview-pane", Vertical).border_title = " preview "
+        self.query_one("#problem-list-pane", Vertical).border_title = " cards "
 
     def on_screen_resume(self) -> None:
         self._populate_problems()
@@ -352,7 +360,7 @@ class AddProblemScreen(Screen):
         except (OSError, UnicodeDecodeError) as e:
             text = f"(error reading file: {e})"
         preview = text[:800] + ("..." if len(text) > 800 else "")
-        self.query_one("#problem-preview-content", Static).update(preview)
+        self.query_one("#problem-preview-content", Markdown).update(preview)
         self.query_one("#problem-preview-header", Static).update(f"  {filepath.name}")
         self.query_one("#problem-status", Static).update(f"  Opening editor: {filepath.name}")
 
@@ -362,7 +370,10 @@ class AddProblemScreen(Screen):
             self.query_one("#problem-status", Static).update("  Rate your recall (no editor):")
             from srs.screens.rating_dialog import RatingDialog
 
-            self.app.push_screen(RatingDialog(), self._on_rate_result)
+            self.app.push_screen(
+                RatingDialog(card, config.desired_retention()),
+                self._on_rate_result,
+            )
             return
 
         args = [editor]
@@ -390,11 +401,14 @@ class AddProblemScreen(Screen):
         except (OSError, UnicodeDecodeError) as e:
             text = f"(error reading file: {e})"
         preview = text[:800] + ("..." if len(text) > 800 else "")
-        self.query_one("#problem-preview-content", Static).update(preview)
+        self.query_one("#problem-preview-content", Markdown).update(preview)
         self.query_one("#problem-status", Static).update("  Rate your recall:")
         from srs.screens.rating_dialog import RatingDialog
 
-        self.app.push_screen(RatingDialog(), self._on_rate_result)
+        self.app.push_screen(
+            RatingDialog(card, config.desired_retention()),
+            self._on_rate_result,
+        )
 
     def action_go_back(self) -> None:
         self.app.pop_screen()

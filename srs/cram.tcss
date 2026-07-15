@@ -312,7 +312,11 @@ Header {
 
 ListView {
     height: 1fr;
-    border: solid $panel;
+    border: round $panel;
+}
+
+ListView:focus {
+    border: round $primary;
 }
 
 ListItem {
@@ -321,6 +325,11 @@ ListItem {
 
 ListItem > Label {
     width: 100%;
+}
+
+ListItem:focus {
+    background: $accent 15%;
+    text-style: bold;
 }
 
 ListItem.-highlight {
@@ -363,10 +372,11 @@ ListItem.-highlight {
 
 Input {
     margin-bottom: 1;
+    border: round $panel;
 }
 
 Input:focus {
-    border: solid $primary;
+    border: double $accent;
 }
 
 Label {
@@ -405,11 +415,11 @@ Label {
    ============================================ */
 
 #settings-overlay {
-    width: 70;
-    max-width: 90%;
+    width: 84;
+    max-width: 95%;
     padding: 1 2;
     background: $surface;
-    border: round $panel;
+    border: round $primary;
 }
 
 #settings-title {
@@ -425,21 +435,26 @@ Label {
     height: auto;
 }
 
-#palette-col {
-    width: 1fr;
+#config-col {
+    width: 55%;
     padding: 0 1;
-    border-right: solid $panel;
 }
 
-#config-col {
-    width: 1fr;
+#right-col {
+    width: 45%;
     padding: 0 1;
-    border-right: solid $panel;
+    border-left: solid $panel;
 }
 
 #theme-col {
-    width: 1fr;
-    padding: 0 1;
+    height: 11;
+    margin-bottom: 1;
+}
+
+#palette-col {
+    border-top: solid $panel;
+    padding-top: 1;
+    height: auto;
 }
 
 #settings-footer {

@@ -86,3 +86,15 @@ def test_graphql_error_in_response():
 
         result = graphql_query("query {}", {})
         assert "errors" in result
+
+
+def test_get_recent_ac_submissions_graphql_error():
+    from srs.leetcode import get_recent_ac_submissions
+
+    mock_result = {"errors": [{"message": "User does not exist"}], "data": None}
+    with patch("srs.leetcode.graphql_query", return_value=mock_result):
+        try:
+            get_recent_ac_submissions("nonexistent")
+            assert False, "Should have raised LeetCodeAPIError"
+        except LeetCodeAPIError as e:
+            assert str(e) == "User does not exist"

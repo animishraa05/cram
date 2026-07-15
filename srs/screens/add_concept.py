@@ -5,7 +5,7 @@ from __future__ import annotations
 from textual.app import ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.screen import Screen
-from textual.widgets import Input, Label, Static
+from textual.widgets import Input, Label, Markdown, Static
 
 from srs import cards, config
 from srs.editor import find_editor, is_vim_family
@@ -74,7 +74,7 @@ class AddConceptScreen(Screen):
                     yield Input(placeholder="Title", id="title-input")
                 with Vertical(id="concept-preview-pane"):
                     yield Static("Note Preview", id="concept-preview-header")
-                    yield Static("", id="concept-preview-content")
+                    yield Markdown("", id="concept-preview-content")
                     yield Static("", id="concept-preview-footer")
             yield Static("", id="concept-status")
         yield Static(
@@ -86,6 +86,8 @@ class AddConceptScreen(Screen):
         self.query_one("#title-input", Input).display = False
         self.query_one("#concept-status", Static).update("  Enter subject, then press Enter.")
         self.query_one("#subject-input", Input).focus()
+        self.query_one("#concept-preview-pane", Vertical).border_title = " preview "
+        self.query_one("#concept-form-pane", Vertical).border_title = " form "
 
     def on_input_submitted(self, event: Input.Submitted) -> None:
         if event.input.id == "subject-input":
@@ -140,9 +142,16 @@ class AddConceptScreen(Screen):
         except (OSError, UnicodeDecodeError) as e:
             text = f"(error reading file: {e})"
         preview = text[:800] + ("..." if len(text) > 800 else "")
-        self.query_one("#concept-preview-content", Static).update(preview)
+        self.query_one("#concept-preview-content", Markdown).update(preview)
         self.query_one("#concept-preview-header", Static).update(f"  {filepath.name}")
         self.query_one("#concept-status", Static).update(f"  Opening editor: {filepath.name}")
+
+        data = cards.load_cards(config.cards_file())
+        existing = cards.find_card_by_title(data, title, "concept")
+        if not existing:
+            existing = cards.make_card(
+                "concept", title, subject=subject, folder=subject, filename=filename
+            )
 
         editor = find_editor()
         if not editor:
@@ -150,7 +159,10 @@ class AddConceptScreen(Screen):
             self.query_one("#concept-status", Static).update("  Rate your recall (no editor):")
             from srs.screens.rating_dialog import RatingDialog
 
-            self.app.push_screen(RatingDialog(), self._on_rate_result)
+            self.app.push_screen(
+                RatingDialog(existing, config.desired_retention()),
+                self._on_rate_result,
+            )
             return
 
         args = [editor]
@@ -173,13 +185,26 @@ class AddConceptScreen(Screen):
         time.sleep(0.1)
         self.app.refresh()
 
-        text = filepath.read_text(encoding="utf-8")
+        try:
+            text = filepath.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError) as e:
+            text = f"(error reading file: {e})"
         preview = text[:800] + ("..." if len(text) > 800 else "")
-        self.query_one("#concept-preview-content", Static).update(preview)
+        self.query_one("#concept-preview-content", Markdown).update(preview)
         self.query_one("#concept-status", Static).update("  Rate your recall:")
         from srs.screens.rating_dialog import RatingDialog
 
-        self.app.push_screen(RatingDialog(), self._on_rate_result)
+        data = cards.load_cards(config.cards_file())
+        existing = cards.find_card_by_title(data, title, "concept")
+        if not existing:
+            existing = cards.make_card(
+                "concept", title, subject=subject, folder=subject, filename=filename
+            )
+
+        self.app.push_screen(
+            RatingDialog(existing, config.desired_retention()),
+            self._on_rate_result,
+        )
 
     def action_go_back(self) -> None:
         if self.query_one("#title-input", Input).display:
