@@ -2,9 +2,21 @@
 
 Spaced repetition TUI for programming problems and academic concepts, powered by FSRS-4.5.
 
-## What it does
+cram helps you remember LeetCode problems and study complex concepts using spaced repetition. It syncs your recent LeetCode submissions, creates notes in your Obsidian vault, and schedules reviews when the forgetting curve says you should revisit a card.
 
-cram helps you remember LeetCode problems and study concepts using spaced repetition. It syncs your recent LeetCode submissions, creates notes in your Obsidian vault, and schedules reviews when the forgetting curve says you should revisit a card.
+---
+
+## Key Features
+
+- **LeetCode Integration**: Automatically syncs accepted submissions from the last 24 hours.
+- **Obsidian-First**: All card details and templates are saved as standard Markdown files inside your Obsidian vault.
+- **FSRS-4.5 Engine**: Powered by the modern Free Spaced Repetition Scheduler, displaying exact recall probabilities and next review intervals (like Anki).
+- **Dual-Pane Dashboard TUI**: Full-screen split panes with rounded borders, dynamic title updates, active due card alerts, and stats grids.
+- **Embedded Note Editor**: Toggle between your standard command-line editor (`nvim`/`vim`) and a native, inline Markdown text editor (`TextArea`) directly inside the TUI viewport.
+- **Silent Git Auto-Backup**: Automatically commits and pushes note modifications and card logs to your private Git repositories in background threads.
+- **Developer-Centric UX**: Standard Vim navigation (`j`/`k`/`o`/`Enter`/`Esc`), hotkeys, and left/right arrow key navigation for horizontal dialog boxes.
+
+---
 
 ## Install
 
@@ -16,20 +28,30 @@ cram helps you remember LeetCode problems and study concepts using spaced repeti
 
 ```bash
 # Arch Linux
-pacman -S python-pipx
+sudo pacman -S python-pipx
 
 # macOS
 brew install pipx
 
-# Other
-pip install pipx
+# Debian/Ubuntu
+sudo apt install pipx
 ```
 
 **Optional:**
-- `nvim` or `vi` — for editing notes (falls back to `$EDITOR` / `$VISUAL`)
+- `nvim` or `vim` — for editing notes (if using external editor mode; falls back to `$EDITOR` / `$VISUAL`)
 - `dunst` + `dunstify` — for desktop notifications
 
 ### Install cram
+
+#### Arch Linux (AUR) — recommended
+
+```bash
+yay -S cram-srs-git
+```
+
+> This installs the latest git version directly from source via the AUR.
+
+#### From source (any distro)
 
 ```bash
 git clone https://github.com/animishraa05/cram.git
@@ -50,139 +72,124 @@ make uninstall
 # or: pipx uninstall cram
 ```
 
+---
+
 ## Quick Start
 
-1. Run `cram` — the setup wizard guides you through configuration
-2. Set your Obsidian vault path, problem folder, and LeetCode username
-3. Press `s` on the home screen to sync your recent LeetCode submissions
-4. Press `3` to review due cards
+1. Run `cram` in your terminal — the setup wizard will guide you through config creation.
+2. Set your Obsidian vault path, problem folder, and LeetCode username.
+3. On the dashboard menu, select **Sync LeetCode** (or run `cram sync` in your CLI) to import your last 24h LeetCode solves.
+4. Select **Review Queue** to start studying cards.
+
+---
 
 ## Usage
 
 ```bash
-cram                  # Open TUI home screen
+cram                  # Open TUI home screen dashboard
 cram add-problem      # Open problem picker
 cram add-concept      # Open concept form
 cram review           # Open review queue
 cram browse           # Browse all cards
 cram sync             # CLI: fetch last-24h LeetCode submissions
-cram sync-concepts    # CLI: import concepts from Obsidian vault
-cram export           # CLI: export cards as CSV to stdout
-cram import FILE      # CLI: import cards from Anki TSV export
+cram sync-concepts    # CLI: scan and import concepts from Obsidian vault
+cram export           # CLI: export card registry as CSV to stdout
+cram import FILE      # CLI: import cards from Anki TSV file
 cram notify           # CLI: send dunst notification for due cards
-cram setup-notifications  # Enable hourly desktop notifications
+cram setup-notifications  # Enable hourly desktop notifications (systemd user timer)
 cram remove-notifications # Disable hourly notifications
 ```
 
-## How It Works
+---
 
-### Adding Problems
+## TUI Walkthrough
 
-**Option 1: Sync from LeetCode**
-- Press `s` on the home screen (or run `cram sync`)
-- Problems solved in the last 24 hours are imported with topic tags
-- Cards appear in the review queue **the next day**
+### 1. Command Dashboard (Home Screen)
+The home screen splits the view into a navigation menu on the left and a telemetry dashboard on the right:
+- **Alerts**: Displays review counts due in muted red or a success catchup message in muted green.
+- **Card Stats**: Lists total cards, cards reviewed, new cards, and average review intervals.
+- **Focus Areas**: Showcases your top 3 subject topics needing attention.
+- **Navigation**: Move menu items using `j`/`k` and select with `o`/`Enter`.
 
-**Option 2: Create manually**
-- Press `1` on the home screen
-- Select "[+] Create new problem..." or pick from unsynced problems
-- Enter title, link, and topic
-- Your editor opens with a note template — fill in your approach and solution
-- After closing the editor, **rate your recall** (see Rating below)
+### 2. Adding Problems & Concepts
+- **Sync**: Synced LeetCode problems automatically import with topic tags (like `Array`, `Hash Table`) and are scheduled for review the next day.
+- **Manual Problem**: Select `[+] Create new problem...` in the problem picker. Fill out the title and links.
+- **Manual Concept**: Enter the subject folder (e.g., `OS`) and the concept title (e.g., `Virtual Memory`).
+- **Editor & Rate**: Your editor will launch. After saving and exiting, you immediately rate your recall.
 
-### Adding Concepts
+### 3. Review Queue
+- **Split Layout**: Left pane lists due cards. Selecting a card immediately loads its Markdown note in the right pane.
+- **Recall Probability**: Displays the exact calculated probability of recall (e.g., `Recall Probability: 86.4%`) in the preview footer.
+- **Dynamic Titles**: The border title of the preview pane automatically changes to display the active note's name (e.g., ` preview: Two Sum [Array] `).
+- **Skip Card**: Press `n` while focused on the card list to skip a card and defer its review.
 
-- Press `2` on the home screen
-- Enter a subject (e.g., "Networking", "DBMS", "OS")
-- Enter a concept title
-- Your editor opens with a concept template
-- After closing the editor, rate your recall
-
-### Reviewing Cards
-
-- Press `3` on the home screen
-- The left pane shows due cards (sorted by urgency)
-- Select a card — the note appears in the right pane
-- **Rate your recall** using the Again/Hard/Good/Easy buttons
-
-**Skip a card:** Press `n` to skip without rating.
-
-**No cards due?** Cards synced from LeetCode become due the next day. Cards created manually are due immediately.
-
-### Rating
-
-After reviewing a card (or creating one), four buttons appear:
+### 4. Spaced Repetition Rating Dialog
+When rating card recall, a horizontal widget bar displays predicted FSRS intervals directly on the buttons (e.g., `Good [g] (12d)`):
 
 | Key | Rating | When to use |
 |-----|--------|-------------|
-| `a` | Again | Complete blackout — couldn't recall at all |
-| `h` | Hard | Significant effort to recall |
-| `g` | Good | Some thought needed, but got it |
-| `e` | Easy | Instant recall, no effort |
+| `a` | Again | Complete blackout — couldn't recall at all (Next: ~1d) |
+| `h` | Hard | Significant effort to recall (Next: ~4d) |
+| `g` | Good | Some thought needed, but got it (Next: ~12d) |
+| `e` | Easy | Instant recall, no effort (Next: ~28d) |
 
-The FSRS-4.5 algorithm uses your ratings to schedule the next review. Higher ratings = longer intervals before the next review.
+- **Navigation**: Press left and right arrow keys to shift focus across the rating options, or press `a`/`h`/`g`/`e` for instant keyboard ratings. Press `Esc` to cancel.
 
-### Browsing Cards
+### 5. Settings Configuration Screen
+Press `,` (comma) from anywhere to open Settings:
+- **Left Column**: Forms to modify vault path, problem folders, LeetCode username, desired retention, notifications, and editor mode.
+- **Right Column**: Scrollable Theme Selector list (`j`/`k` to navigate) and live theme color swatch previews.
+- **Shortcuts**: Press `Ctrl+h` to focus the config input forms. Press `Ctrl+l` to focus the theme selection list. Press `Ctrl+s` to save and apply settings.
 
-- Press `b` on the home screen
-- Search by title or topic in the search bar
-- Filter: `[a]` All, `[n]` New, `[d]` Due, `[r]` Reviewed
-- Select a card to see details in the right pane
-- Press `e` to edit a card's topic
-- Press `d` to delete a card (press `y` to confirm)
-- Press `Escape` to deselect or go back
+### 6. Browse Cards
+Select **Browse Cards** on the main menu (or run `cram browse`) to search and manage your cards:
+- **Search**: Press `/` to focus the search box. Type to filter by title or topic.
+- **Edit Topic**: Press `e` to change the topic/category of the selected card.
+- **Delete Card**: Press `d` to initiate deletion, then press `y` to confirm (or `Esc` to cancel).
 
-## Keybindings
+---
 
-### Global
+## Feature Details
 
-| Key | Action |
-|-----|--------|
-| `q` | Quit |
-| `,` | Open Settings |
+### 📝 Embedded Note Editor Mode
+You can edit notes inline without suspending the TUI or launching an external terminal editor:
+1. Go to Settings (press `,`).
+2. Set **Editor Mode** to `embedded` (default is `external`).
+3. Press `Ctrl+s` to save.
+When creating or editing notes, a premium inline Markdown text editor (`TextArea`) will occupy the viewport. Press **`Ctrl+s`** to save your text and exit, or **`Esc`** to cancel.
 
-### Home Screen
+### 💾 Git Auto-Sync / Auto-Backup
+cram will silently back up your Obsidian notes and card logs in a background thread:
+- If your Obsidian vault directory contains a `.git` folder, cram runs a background git commit/push routine whenever you create a note or rate a card.
+- If your `cards.json` directory is a Git repository, cram will sync that folder too.
+- Pushes are sent to your git remote origin server (if configured). Status updates are shown as non-intrusive TUI notifications.
 
-| Key | Action |
-|-----|--------|
-| `1` | Add Problem |
-| `2` | Add Concept |
-| `3` | Review Due |
-| `b` | Browse Cards |
-| `s` | Sync LeetCode |
+> [!IMPORTANT]
+> Since git auto-sync runs in the background, your repository must be configured to push without interactive password prompts (e.g., using SSH keys or a credential helper).
 
-### Review Screen
+### 📂 Importing and Exporting
+* **Anki TSV Import**: `cram import FILE` imports cards from an Anki-compatible Tab-Separated Values (TSV) export file.
+  * **Format**: Lines must be structured as `FrontText\tBackText\tTags` (or at least `FrontText\tBackText`).
+  * The first tag will be used as the topic (defaulting to `General`), and the card will be added as a `problem` card.
+* **CSV Export**: `cram export` exports your card list in CSV format: `type, title, topic, link, subject, review_count, interval, next_review`.
 
-| Key | Action |
-|-----|--------|
-| `n` | Skip card |
-| `a` | Rate: Again |
-| `h` | Rate: Hard |
-| `g` | Rate: Good |
-| `e` | Rate: Easy |
-| `Escape` | Go back |
+### 🔍 Concept Scanning (`sync-concepts`)
+`cram sync-concepts` recursively scans your Obsidian vault for notes matching concept cards.
+* Only markdown files (`.md`) containing **`type: concept`** in their YAML frontmatter will be imported.
+* Example concept frontmatter:
+  ```yaml
+  ---
+  title: "Virtual Memory"
+  type: concept
+  subject: "Operating Systems"
+  ---
+  ```
 
-### Add Concept Screen
-
-| Key | Action |
-|-----|--------|
-| `Shift+Tab` | Go back from title to subject |
-
-### Browse Screen
-
-| Key | Action |
-|-----|--------|
-| `a` | Show all cards |
-| `n` | Show new cards |
-| `d` | Show due cards / Delete selected |
-| `r` | Show reviewed cards |
-| `e` | Edit topic of selected card |
-| `y` | Confirm delete |
-| `Escape` | Deselect / Go back |
+---
 
 ## Config
 
-On first launch, the setup wizard guides you through configuration. Config is stored at `~/.config/cram/config`:
+Config is stored at `~/.config/cram/config`:
 
 ```ini
 OBSIDIAN_VAULT="$HOME/blog/content"
@@ -190,69 +197,34 @@ PROBLEM_FOLDER="Private/Daily/Problems"
 LEETCODE_USERNAME="your-leetcode-username"
 DESIRED_RETENTION=0.9
 THEME="tokyonight"
+EDITOR_MODE="external"
 CARDS_FILE="$HOME/.local/share/cram/cards.json"
+
+# Notification Settings
+NOTIFY_ENABLED="true"
+NOTIFY_INTERVAL=3600
+MAX_ITEMS=8
+URGENCY="normal"
+TIMEOUT=0
 ```
 
 ### Themes
-
-Available themes: `default`, `dracula`, `gruvbox`, `nord`, `tokyonight`, `catppuccin`, `solarized`, `forest`
-
-Change theme via the settings screen (press `,`) or edit config directly.
+Supported: `default`, `dracula`, `gruvbox`, `nord`, `tokyonight`, `catppuccin`, `solarized`, `forest`
 
 ### Desired Retention
-
-Controls how often you want to recall cards successfully. Range: `0.01` to `1.0`.
-
-- `0.9` (default) — 90% retention, balanced review frequency
-- `0.8` — fewer reviews, but more forgetting
-- `0.95` — more reviews, but better retention
+Sets the target probability of successful recall (from `0.01` to `1.0`).
+- `0.9` (default) — balanced review intervals.
+- `0.85` — longer intervals, slightly more forgetting.
+- `0.95` — shorter intervals, very high retention.
 
 ### Notifications
+- **NOTIFY_ENABLED**: Toggle background hourly notifications (`true`/`false`).
+- **NOTIFY_INTERVAL**: Refresh time in seconds (minimum `60`).
+- **MAX_ITEMS**: Limit the number of due cards listed in a single notification pop-up.
+- **URGENCY**: Dunst urgency level (`low`, `normal`, `critical`).
+- **TIMEOUT**: Dunst notification display time in milliseconds (`0` for persistent, until clicked).
 
-cram can send desktop notifications when cards are due for review. Requires `dunst` + `dunstify`.
-
-**Setup:**
-
-```bash
-cram setup-notifications   # Enable hourly notifications (systemd timer)
-cram remove-notifications  # Disable notifications
-```
-
-**Config keys:**
-
-```ini
-NOTIFY_ENABLED=true
-NOTIFY_INTERVAL=3600       # seconds between checks (default: 3600)
-```
-
-**How it works:**
-- **In-TUI:** When the TUI is open, cram checks for due cards every hour (using `set_interval`)
-- **Background:** `setup-notifications` creates a systemd user timer that runs `cram notify` hourly
-- **Desktop:** Notifications are sent via `dunstify` (requires `dunst` running)
-
-**Manual test:**
-
-```bash
-cram notify   # Send notification now if cards are due
-```
-
-## Data Storage
-
-Cards are stored in JSON at:
-- `~/.local/share/cram/cards.json` (default, XDG-compliant)
-- `~/cram/data/cards.json` (legacy fallback)
-
-Notes are stored in your Obsidian vault as Markdown files with YAML frontmatter.
-
-## FSRS Algorithm
-
-cram uses [FSRS-4.5](https://github.com/open-spaced-repetition/awesome-fsrs) with default parameters trained on 700M+ Anki reviews. It models:
-
-- **Difficulty** (D) — per-card difficulty (1-10)
-- **Stability** (S) — days until recall drops to 90%
-- **Retrievability** (R) — current probability of recall
-
-This results in 20-30% fewer reviews compared to older algorithms like SM-2.
+---
 
 ## Project Structure
 
@@ -260,64 +232,49 @@ This results in 20-30% fewer reviews compared to older algorithms like SM-2.
 cram/
 ├── srs/
 │   ├── app.py            # Main TUI app + CLI
-│   ├── cards.py          # FSRS-4.5 algorithm + card CRUD
+│   ├── cards.py          # FSRS-4.5 scheduling engine
 │   ├── config.py         # Config loader
-│   ├── editor.py         # Editor detection
-│   ├── export.py         # CSV export + Anki import
-│   ├── leetcode.py       # LeetCode GraphQL API
-│   ├── notify.py         # dunst notifications
+│   ├── editor.py         # External editor detection
+│   ├── git_sync.py       # Git Auto-Sync background runner
+│   ├── export.py         # CSV Export + Anki TSV Import
+│   ├── leetcode.py       # LeetCode GraphQL Client
+│   ├── notify.py         # dunst desktop notifications
 │   ├── obsidian.py       # Obsidian vault scanner
-│   ├── templates.py      # Markdown note templates
-│   ├── theme.py          # Theme system (8 presets)
+│   ├── templates.py      # Markdown templates
+│   ├── theme.py          # Color themes (8 presets)
 │   ├── cram.tcss         # Textual CSS styles
 │   └── screens/
-│       ├── home.py       # Main menu
-│       ├── add_problem.py    # Add problem + create new
-│       ├── add_concept.py    # Add concept
-│       ├── browse.py         # Browse/search all cards
-│       ├── editor.py         # In-TUI note editor
-│       ├── review.py         # Review due cards
-│       ├── rating.py         # Rating widget
-│       ├── setup.py          # First-run wizard
-│       └── settings.py       # Theme selector + config
-├── tests/
-├── data/
+│       ├── home.py       # Dashboard Menu screen
+│       ├── add_problem.py    # Problem picker + creator
+│       ├── add_concept.py    # Concept form screen
+│       ├── browse.py         # Card search & edit browser
+│       ├── editor.py         # In-TUI TextArea editor
+│       ├── review.py         # Review Queue screen
+│       ├── rating_dialog.py  # Recall rating modal
+│       ├── confirm.py        # Yes/no modal
+│       ├── settings.py       # Theme selector + config forms
+│       └── setup.py          # Setup wizard
+├── tests/                # PyTest suite
 ├── CHANGELOG.md
 ├── CONTRIBUTING.md
 ├── Makefile
 ├── pyproject.toml
-├── LICENSE
 └── README.md
 ```
 
-## Testing
-
-```bash
-make test
-```
-
-## Linting
-
-```bash
-make lint     # ruff + mypy
-make format   # ruff format
-```
+---
 
 ## Troubleshooting
 
-**"No editor found"** — Set `$EDITOR` in your shell, or install `nvim`/`vi`.
+**"No editor found"** — Set `$EDITOR` in your shell, or go to settings (`,`) and set **Editor Mode** to `embedded`.
 
-**"dunstify not found"** — Install `dunst` for desktop notifications, or ignore (cram works without it).
+**"dunstify not found"** — Install `dunst` for desktop notifications. The TUI will still run perfectly without it.
 
-**"LEETCODE_USERNAME not set"** — Run `cram` and go to Settings (`,`) to set it, or add `LEETCODE_USERNAME="yourname"` to `~/.config/cram/config`.
+**Theme not changing** — Open settings (`,`), scroll the theme list, and ensure you press **`Ctrl+s`** to save.
 
-**Sync failed (429)** — LeetCode rate-limiting. Wait a minute and try again.
+**Sync failed (429 / LeetCode API Error)** — LeetCode rate-limiting or username not found. Wait a minute and try again.
 
-**No cards due after sync** — Synced cards become due the next day. Create problems manually for immediate review.
-
-**Rating buttons don't appear** — This was a known bug. Update to the latest version.
-
-**Theme not changing** — Press `,` to open Settings, navigate with arrow keys, press `s` to save.
+---
 
 ## License
 

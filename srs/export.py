@@ -7,11 +7,12 @@ import sys
 from pathlib import Path
 
 from srs import cards
+from srs.config import cards_file as _cards_file
 
 
 def export_csv(path: Path | None = None) -> None:
     """Export all cards to CSV on stdout or file."""
-    data = cards.load_cards(cards.cards_file() if path is None else path)
+    data = cards.load_cards(_cards_file() if path is None else path)
     all_cards = []
     for key in ("problem_cards", "concept_cards"):
         all_cards.extend(data.get(key, []))

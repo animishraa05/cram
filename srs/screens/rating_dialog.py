@@ -105,7 +105,7 @@ class RatingDialog(ModalScreen[int]):
             "rate-good": 3,
             "rate-easy": 4,
         }
-        grade = mapping.get(event.button.id)
+        grade = mapping.get(event.button.id or "")
         if grade is not None:
             self.dismiss(grade)
 

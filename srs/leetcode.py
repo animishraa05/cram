@@ -59,7 +59,7 @@ def graphql_query(query: str, variables: dict, retries: int = 3) -> dict:
     for attempt in range(retries):
         try:
             with urlopen(req, timeout=15) as resp:
-                return json.loads(resp.read())
+                return dict(json.loads(resp.read()))
         except HTTPError as e:
             last_err = e
             if e.code == 429 and attempt < retries - 1:
@@ -87,7 +87,8 @@ def get_recent_ac_submissions(username: str, limit: int = 50) -> list[dict]:
     if errors:
         raise LeetCodeAPIError(errors[0].get("message", "GraphQL Error"))
     data = result.get("data") or {}
-    return data.get("recentAcSubmissionList", [])
+    submissions = data.get("recentAcSubmissionList", [])
+    return submissions if submissions is not None else []
 
 
 def get_problem_tags(title_slug: str) -> list[str]:
@@ -108,7 +109,8 @@ def get_problem_tags(title_slug: str) -> list[str]:
     data = result.get("data") or {}
     question = data.get("question")
     if question:
-        return [t["name"] for t in question.get("topicTags", [])]
+        tags = question.get("topicTags") or []
+        return [t["name"] for t in tags if t and "name" in t]
     return []
 
 

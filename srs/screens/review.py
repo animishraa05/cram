@@ -2,12 +2,17 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from textual.app import ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.screen import Screen
 from textual.widgets import Label, ListItem, ListView, Markdown, Static
 
 from srs import cards, config
+
+if TYPE_CHECKING:
+    from srs.app import CramApp
 
 
 class ReviewScreen(Screen):
@@ -176,7 +181,7 @@ class ReviewScreen(Screen):
 
     def on_list_view_selected(self, event: ListView.Selected) -> None:
         idx = event.index
-        if idx >= len(getattr(self, "_due", [])):
+        if idx is None or idx >= len(getattr(self, "_due", [])):
             return
         card = self._due[idx]
         self._rating_card_id = card.get("id")
@@ -238,6 +243,8 @@ class ReviewScreen(Screen):
             cards.update_card(target, grade, config.desired_retention())
             cards.save_cards(config.cards_file(), data)
             self.notify(f"Rated {target.get('title', 'Unknown')}: grade={grade}")
+            cram_app: CramApp = self.app  # type: ignore[assignment]
+            cram_app.sync_git_background()
 
         self._populate_due()
         if not self._due:

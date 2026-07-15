@@ -7,32 +7,44 @@ from datetime import datetime, timedelta, timezone
 
 from srs import cards, config
 
-_dunstify_path: str | None = None
+_notifier_path: str | None = None
 
 
 def _has_dunstify() -> bool:
-    global _dunstify_path
-    if _dunstify_path is None:
-        _dunstify_path = shutil.which("dunstify")
-    return _dunstify_path is not None
+    global _notifier_path
+    if _notifier_path is None:
+        _notifier_path = shutil.which("dunstify") or shutil.which("notify-send")
+    return _notifier_path is not None
 
 
 def send_notification(summary: str, body: str, urgency: str = "normal", timeout: int = 0) -> None:
-    cmd = [
-        "dunstify",
-        "-a",
-        "cram",
-        "-u",
-        urgency,
-        "-t",
-        str(timeout),
-        "-h",
-        "string:x-dunst-stack-tag:cram",
-        "-h",
-        "int:value:0",
-        summary,
-        body,
-    ]
+    dunstify = shutil.which("dunstify")
+    if dunstify:
+        cmd = [
+            "dunstify",
+            "-a",
+            "cram",
+            "-u",
+            urgency,
+            "-t",
+            str(timeout),
+            "-h",
+            "string:x-dunst-stack-tag:cram",
+            "-h",
+            "int:value:0",
+            summary,
+            body,
+        ]
+    else:
+        cmd = [
+            "notify-send",
+            "-u",
+            urgency,
+            "-t",
+            str(timeout if timeout > 0 else 5000),
+            summary,
+            body,
+        ]
     subprocess.run(cmd, check=False, timeout=10)
 
 
@@ -102,7 +114,8 @@ def notify_due() -> None:
     """Send dunst notification for due cards. Prints to stdout (CLI mode)."""
     if not _has_dunstify():
         print(
-            "Warning: dunstify not found. Install dunst for desktop notifications.",
+            "Warning: neither dunstify nor notify-send found. "
+            "Install dunst or libnotify-bin for notifications.",
             file=sys.stderr,
         )
         return

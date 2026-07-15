@@ -127,7 +127,7 @@ class HomeScreen(Screen):
         self.query_one("#home-config-details", Static).border_title = " system "
         self.query_one("#home-topics-details", Static).border_title = " focus "
 
-    def _on_screen_resume(self) -> None:
+    def _on_screen_resume(self, event: object) -> None:  # type: ignore[override]
         self._update_stats()
 
     def _update_stats(self) -> None:

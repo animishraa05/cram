@@ -41,7 +41,7 @@ class CramApp(App):
         super().__init__()
         self._cli_target = cli_target
 
-    def action_quit(self) -> None:
+    async def action_quit(self) -> None:  # type: ignore[override]
         self.push_screen(ConfirmScreen("Quit cram?"), self._on_quit_confirm)
 
     def _on_quit_confirm(self, result: bool | None) -> None:
@@ -91,6 +91,15 @@ class CramApp(App):
             )
             self.register_theme(textual_theme)
         self.theme = f"cram-{theme_name()}"
+
+    def sync_git_background(self) -> None:
+        from srs import config
+        from srs.git_sync import sync_all_background
+
+        def on_sync_done(msg: str) -> None:
+            self.call_from_thread(self.notify, f"Git Backup: {msg}")
+
+        sync_all_background(config.vault(), config.cards_file(), on_sync_done)
 
 
 HELP_TEXT = """\

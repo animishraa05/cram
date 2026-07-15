@@ -168,9 +168,10 @@ class BrowseScreen(Screen):
             self._refresh_list(clear_detail=False)
 
     def on_list_view_selected(self, event: ListView.Selected) -> None:
-        if event.index >= len(self._cards):
+        idx = event.index
+        if idx is None or idx >= len(self._cards):
             return
-        card = self._cards[event.index]
+        card = self._cards[idx]
         self._selected_card = card
         self._pending_delete = None
         self.query_one("#browse-topic-input", Input).display = False

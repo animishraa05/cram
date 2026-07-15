@@ -6,6 +6,7 @@ import os
 import uuid
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from typing import cast
 
 # FSRS-4.5 default parameters (17 weights)
 # Trained on ~700M reviews from Anki users
@@ -38,7 +39,7 @@ def retrievability(elapsed_days: float, stability: float) -> float:
     """R(t, S) = (1 + FACTOR * t / S) ^ DECAY"""
     if stability <= 0:
         return 0.0
-    return (1 + FACTOR * elapsed_days / stability) ** DECAY
+    return float((1 + FACTOR * elapsed_days / stability) ** DECAY)
 
 
 def next_interval(stability: float, desired_retention: float = 0.9) -> float:
@@ -46,7 +47,7 @@ def next_interval(stability: float, desired_retention: float = 0.9) -> float:
     if stability <= 0:
         return 1.0
     interval = stability / FACTOR * (desired_retention ** (1 / DECAY) - 1)
-    return max(1.0, round(interval))
+    return float(max(1.0, round(interval)))
 
 
 def next_difficulty(difficulty: float, grade: int, w: list[float] | None = None) -> float:
@@ -77,7 +78,7 @@ def next_stability_after_recall(
         * w[15] ** (1 if grade == 2 else 0)
         * w[16] ** (1 if grade == 4 else 0)
     )
-    return stability * (1 + s_inc)
+    return float(stability * (1 + s_inc))
 
 
 def next_stability_after_forget(
@@ -90,7 +91,7 @@ def next_stability_after_forget(
     if w is None:
         w = DEFAULT_W
     r = max(retrievability, 0.01)
-    return (
+    return float(
         w[11] * difficulty ** (-w[12]) * ((stability + 1) ** w[13] - 1) * math.exp(w[14] * (1 - r))
     )
 
@@ -188,9 +189,14 @@ def update_card(card: dict, grade: int, desired_retention: float = 0.9) -> dict:
 
 
 def load_cards(path: Path) -> dict:
+    data: dict[str, list[dict]] = {"concept_cards": [], "problem_cards": []}
     if path.exists():
         try:
-            return json.loads(path.read_text(encoding="utf-8"))
+            loaded = json.loads(path.read_text(encoding="utf-8"))
+            if isinstance(loaded, dict):
+                loaded.setdefault("concept_cards", [])
+                loaded.setdefault("problem_cards", [])
+                return loaded
         except json.JSONDecodeError as e:
             import logging
 
@@ -204,7 +210,7 @@ def load_cards(path: Path) -> dict:
             except OSError:
                 pass
             path.write_text('{"concept_cards": [], "problem_cards": []}', encoding="utf-8")
-    return {"concept_cards": [], "problem_cards": []}
+    return data
 
 
 def save_cards(path: Path, data: dict) -> None:
@@ -258,7 +264,7 @@ def find_card_by_title(data: dict, title: str, card_type: str = "problem") -> di
     key = "problem_cards" if card_type == "problem" else "concept_cards"
     for c in data.get(key, []):
         if c.get("title", "").lower() == title.lower():
-            return c
+            return cast("dict[str, object]", c)
     return None
 
 
@@ -266,7 +272,7 @@ def find_card_by_id(data: dict, card_id: str) -> dict | None:
     for key in ("problem_cards", "concept_cards"):
         for c in data.get(key, []):
             if c.get("id") == card_id:
-                return c
+                return cast("dict[str, object]", c)
     return None
 
 

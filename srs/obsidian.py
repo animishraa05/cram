@@ -33,10 +33,15 @@ def scan_vault_for_concepts(vault: Path, folder: str = "") -> list[dict]:
         title = ""
         subject = ""
         for line in fm.splitlines():
-            if line.startswith("title:"):
-                title = line.split(":", 1)[1].strip().strip('"').strip("'")
-            elif line.startswith("subject:"):
-                subject = line.split(":", 1)[1].strip().strip('"').strip("'")
+            line = line.strip()
+            if ":" in line:
+                key, _, val = line.partition(":")
+                key = key.strip().lower()
+                val = val.strip().strip('"').strip("'")
+                if key == "title":
+                    title = val
+                elif key == "subject":
+                    subject = val
 
         if not title:
             title = md_file.stem

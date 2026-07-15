@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from textual.app import ComposeResult
 from textual.containers import Horizontal, Vertical
@@ -11,6 +13,9 @@ from textual.widgets import Input, Label, ListItem, ListView, Markdown, Static
 
 from srs import cards, config
 from srs.editor import find_editor, is_vim_family
+
+if TYPE_CHECKING:
+    from srs.app import CramApp
 
 
 class CreateProblem(Screen):
@@ -61,7 +66,7 @@ class CreateProblem(Screen):
         )
 
     def on_mount(self) -> None:
-        self._card = None
+        self._card: dict | None = None
         self.query_one("#title-input", Input).focus()
 
     def on_input_submitted(self, event: Input.Submitted) -> None:
@@ -99,8 +104,6 @@ class CreateProblem(Screen):
         self.app.call_later(self._do_open_editor, card, data)
 
     def _do_open_editor(self, card: dict, data: dict) -> None:
-        import os
-        import time
 
         from srs.templates import problem_template, sanitize_filename
 
@@ -132,6 +135,24 @@ class CreateProblem(Screen):
 
         self.query_one("#create-status", Static).update(f"Opening editor: {filepath.name}")
 
+        if config.editor_mode() == "embedded":
+            from srs.screens.editor import EditorScreen
+
+            def on_editor_done(saved: bool | None) -> None:
+                if not saved:
+                    self.query_one("#create-status", Static).update("Editor cancelled.")
+                    return
+                self.query_one("#create-status", Static).update("Rate your recall:")
+                from srs.screens.rating_dialog import RatingDialog
+
+                self.app.push_screen(
+                    RatingDialog(self._card, config.desired_retention()),
+                    self._on_rate_result,
+                )
+
+            self.app.push_screen(EditorScreen(filepath), on_editor_done)
+            return
+
         editor = find_editor()
         if not editor:
             self.notify("No editor found. Set $EDITOR or install nvim/vi.", severity="error")
@@ -149,20 +170,18 @@ class CreateProblem(Screen):
             args += ["+normal G$", "+startinsert"]
         args.append(str(filepath))
 
-        pid = os.fork()
-        if pid < 0:
-            self.notify("Failed to fork process", severity="error")
-            return
-        if pid == 0:
-            try:
-                os.execvp(editor, args)
-            except OSError:
-                os._exit(1)
-        else:
-            os.waitpid(pid, 0)
-
-        time.sleep(0.1)
-        self.app.refresh()
+        with self.app.suspend():
+            pid = os.fork()
+            if pid < 0:
+                self.notify("Failed to fork process", severity="error")
+                return
+            if pid == 0:
+                try:
+                    os.execvp(editor, args)
+                except OSError:
+                    os._exit(1)
+            else:
+                os.waitpid(pid, 0)
 
         self.query_one("#create-status", Static).update("Rate your recall:")
         from srs.screens.rating_dialog import RatingDialog
@@ -188,6 +207,8 @@ class CreateProblem(Screen):
             cards.update_card(target, grade, config.desired_retention())
             cards.save_cards(config.cards_file(), data)
             self.notify(f"Rated {target.get('title', 'Unknown')}: grade={grade}")
+            cram_app: CramApp = self.app  # type: ignore[assignment]
+            cram_app.sync_git_background()
 
         self.app.pop_screen()
 
@@ -306,6 +327,8 @@ class AddProblemScreen(Screen):
 
     def on_list_view_selected(self, event: ListView.Selected) -> None:
         idx = event.index
+        if idx is None:
+            return
         if idx == 0:
             self.app.push_screen(CreateProblem())
             return
@@ -317,8 +340,6 @@ class AddProblemScreen(Screen):
         self.app.call_later(self._do_open_editor, card)
 
     def _do_open_editor(self, card: dict) -> None:
-        import os
-        import time
 
         from srs.templates import problem_template, sanitize_filename
 
@@ -365,6 +386,31 @@ class AddProblemScreen(Screen):
         ).border_title = f" preview: {filepath.name} "
         self.query_one("#problem-status", Static).update(f"  Opening editor: {filepath.name}")
 
+        if config.editor_mode() == "embedded":
+            from srs.screens.editor import EditorScreen
+
+            def on_editor_done(saved: bool | None) -> None:
+                if not saved:
+                    self.query_one("#problem-status", Static).update("  Editor cancelled.")
+                    self.query_one("#problem-list", ListView).focus()
+                    return
+                try:
+                    text = filepath.read_text(encoding="utf-8")
+                except (OSError, UnicodeDecodeError) as e:
+                    text = f"(error reading file: {e})"
+                preview = text[:800] + ("..." if len(text) > 800 else "")
+                self.query_one("#problem-preview-content", Markdown).update(preview)
+                self.query_one("#problem-status", Static).update("  Rate your recall:")
+                from srs.screens.rating_dialog import RatingDialog
+
+                self.app.push_screen(
+                    RatingDialog(card, config.desired_retention()),
+                    self._on_rate_result,
+                )
+
+            self.app.push_screen(EditorScreen(filepath), on_editor_done)
+            return
+
         editor = find_editor()
         if not editor:
             self.notify("No editor found. Set $EDITOR or install nvim/vi.", severity="error")
@@ -382,20 +428,18 @@ class AddProblemScreen(Screen):
             args += ["+normal G$", "+startinsert"]
         args.append(str(filepath))
 
-        pid = os.fork()
-        if pid < 0:
-            self.notify("Failed to fork process", severity="error")
-            return
-        if pid == 0:
-            try:
-                os.execvp(editor, args)
-            except OSError:
-                os._exit(1)
-        else:
-            os.waitpid(pid, 0)
-
-        time.sleep(0.1)
-        self.app.refresh()
+        with self.app.suspend():
+            pid = os.fork()
+            if pid < 0:
+                self.notify("Failed to fork process", severity="error")
+                return
+            if pid == 0:
+                try:
+                    os.execvp(editor, args)
+                except OSError:
+                    os._exit(1)
+            else:
+                os.waitpid(pid, 0)
 
         try:
             text = filepath.read_text(encoding="utf-8")
@@ -430,5 +474,7 @@ class AddProblemScreen(Screen):
             cards.update_card(target, grade, config.desired_retention())
             cards.save_cards(config.cards_file(), data)
             self.notify(f"Rated {target.get('title', 'Unknown')}: grade={grade}")
+            cram_app: CramApp = self.app  # type: ignore[assignment]
+            cram_app.sync_git_background()
 
         self.app.pop_screen()

@@ -111,3 +111,8 @@ def notify_interval() -> int:
 def is_configured() -> bool:
     cfg_path = config_path()
     return cfg_path.exists() and vault().exists()
+
+
+def editor_mode() -> str:
+    mode = get("EDITOR_MODE", "external").lower().strip()
+    return mode if mode in ("external", "embedded") else "external"

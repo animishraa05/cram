@@ -220,6 +220,7 @@ class SetupScreen(Screen):
         # Save config
         self._cfg["CARDS_FILE"] = str(cards_file())
         save_config(self._cfg)
+        self.app.theme = f"cram-{self._cfg.get('THEME', 'tokyonight')}"
 
         # Create cards.json if needed
         cards_path = cards_file()

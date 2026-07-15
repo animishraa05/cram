@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import os
+from typing import TYPE_CHECKING
+
 from textual.app import ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.screen import Screen
@@ -9,6 +12,9 @@ from textual.widgets import Input, Label, Markdown, Static
 
 from srs import cards, config
 from srs.editor import find_editor, is_vim_family
+
+if TYPE_CHECKING:
+    from srs.app import CramApp
 
 
 class AddConceptScreen(Screen):
@@ -116,8 +122,6 @@ class AddConceptScreen(Screen):
             self.app.call_later(self._do_open_editor, title)
 
     def _do_open_editor(self, title: str) -> None:
-        import os
-        import time
 
         from srs.templates import concept_template, sanitize_filename
 
@@ -153,6 +157,46 @@ class AddConceptScreen(Screen):
             )
 
         editor = find_editor()
+        if config.editor_mode() == "embedded":
+            from srs.screens.editor import EditorScreen
+
+            def on_editor_done(saved: bool | None) -> None:
+                if not saved:
+                    self.query_one("#concept-status", Static).update("  Editor cancelled.")
+                    return
+                try:
+                    text = filepath.read_text(encoding="utf-8")
+                except (OSError, UnicodeDecodeError) as e:
+                    text = f"(error reading file: {e})"
+                preview = text[:800] + ("..." if len(text) > 800 else "")
+                self.query_one("#concept-preview-content", Markdown).update(preview)
+                self.query_one(
+                    "#concept-preview-pane", Vertical
+                ).border_title = f" preview: {filename} "
+                self.query_one("#concept-status", Static).update("  Rate your recall:")
+
+                from srs.screens.rating_dialog import RatingDialog
+
+                # Fetch target concept card (might need to load cards first)
+                data_c = cards.load_cards(config.cards_file())
+                existing_c = cards.find_card_by_title(data_c, title, "concept")
+                if not existing_c:
+                    existing_c = cards.make_card(
+                        "concept",
+                        title,
+                        subject=subject,
+                        folder=subject,
+                        filename=filename,
+                    )
+                self.app.push_screen(
+                    RatingDialog(existing_c, config.desired_retention()),
+                    self._on_rate_result,
+                )
+
+            self.app.push_screen(EditorScreen(filepath), on_editor_done)
+            return
+
+        editor = find_editor()
         if not editor:
             self.notify("No editor found. Set $EDITOR or install nvim/vi.", severity="error")
             self.query_one("#concept-status", Static).update("  Rate your recall (no editor):")
@@ -169,20 +213,18 @@ class AddConceptScreen(Screen):
             args += ["+normal G$", "+startinsert"]
         args.append(str(filepath))
 
-        pid = os.fork()
-        if pid < 0:
-            self.notify("Failed to fork process", severity="error")
-            return
-        if pid == 0:
-            try:
-                os.execvp(editor, args)
-            except OSError:
-                os._exit(1)
-        else:
-            os.waitpid(pid, 0)
-
-        time.sleep(0.1)
-        self.app.refresh()
+        with self.app.suspend():
+            pid = os.fork()
+            if pid < 0:
+                self.notify("Failed to fork process", severity="error")
+                return
+            if pid == 0:
+                try:
+                    os.execvp(editor, args)
+                except OSError:
+                    os._exit(1)
+            else:
+                os.waitpid(pid, 0)
 
         try:
             text = filepath.read_text(encoding="utf-8")
@@ -252,4 +294,6 @@ class AddConceptScreen(Screen):
 
         cards.save_cards(config.cards_file(), data)
         self.notify(f"Rated {title}: grade={grade}")
+        cram_app: CramApp = self.app  # type: ignore[assignment]
+        cram_app.sync_git_background()
         self.app.pop_screen()
