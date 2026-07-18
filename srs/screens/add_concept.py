@@ -79,6 +79,7 @@ class AddConceptScreen(Screen):
                     yield Label("Concept title:")
                     yield Input(placeholder="Title", id="title-input")
                 with Vertical(id="concept-preview-pane"):
+                    yield Static("", id="concept-preview-header")
                     yield Markdown("", id="concept-preview-content")
                     yield Static("", id="concept-preview-footer")
             yield Static("", id="concept-status")
