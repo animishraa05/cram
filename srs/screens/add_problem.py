@@ -329,7 +329,7 @@ class AddProblemScreen(Screen):
         self.query_one("#problem-list", ListView).action_cursor_up()
 
     def on_list_view_selected(self, event: ListView.Selected) -> None:
-        idx = event.index
+        idx = event.list_view.index
         if idx is None:
             return
         if idx == 0:

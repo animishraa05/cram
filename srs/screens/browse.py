@@ -168,7 +168,7 @@ class BrowseScreen(Screen):
             self._refresh_list(clear_detail=False)
 
     def on_list_view_selected(self, event: ListView.Selected) -> None:
-        idx = event.index
+        idx = event.list_view.index
         if idx is None or idx >= len(self._cards):
             return
         card = self._cards[idx]

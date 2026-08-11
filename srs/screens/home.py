@@ -187,8 +187,9 @@ class HomeScreen(Screen):
             pass
 
     def on_list_view_selected(self, event: ListView.Selected) -> None:
-        if event.index is not None:
-            self._navigate_to(event.index)
+        idx = event.list_view.index
+        if idx is not None:
+            self._navigate_to(idx)
 
     def _navigate_to(self, index: int) -> None:
         match index:
