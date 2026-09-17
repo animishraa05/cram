@@ -37,9 +37,8 @@ class SettingsScreen(Screen):
                     yield Input(placeholder="username", id="leetcode-input")
                     yield Label("Retention (0.0-1.0):")
                     yield Input(placeholder="0.9", id="retention-input")
-                    with Horizontal(id="notify-row"):
-                        yield Label("Notifications:")
-                        yield Switch(id="notify-switch", animate=False)
+                    yield Label("Notifications (Space to toggle):")
+                    yield Switch(id="notify-switch", animate=False)
                     yield Label("Notify Interval (seconds):")
                     yield Input(placeholder="3600", id="interval-input")
                     yield Label("Editor Command (e.g. nvim, vim, code):")
@@ -56,20 +55,6 @@ class SettingsScreen(Screen):
                 id="settings-footer",
             )
 
-    DEFAULT_CSS = """
-    #notify-row {
-        height: auto;
-        align: left middle;
-        margin-bottom: 1;
-    }
-    #notify-row Label {
-        margin-right: 1;
-        margin-top: 0;
-    }
-    #notify-switch {
-        margin-top: 0;
-    }
-    """
 
     def on_mount(self) -> None:
         self._selected_idx = 0
