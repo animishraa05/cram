@@ -394,12 +394,15 @@ Label {
    Settings Screen
    ============================================ */
 
+SettingsScreen {
+    align: center middle;
+}
+
 #settings-overlay {
-    width: 84;
-    max-width: 95%;
+    width: 100%;
+    height: 100%;
     padding: 1 2;
     background: $surface;
-    border: round $primary;
 }
 
 #settings-title {
@@ -412,16 +415,18 @@ Label {
 }
 
 #settings-columns {
-    height: auto;
+    height: 1fr;
 }
 
 #config-col {
     width: 55%;
+    height: 1fr;
     padding: 0 1;
 }
 
 #right-col {
     width: 45%;
+    height: 1fr;
     padding: 0 1;
     border-left: solid $panel;
 }
@@ -434,12 +439,15 @@ Label {
 #palette-col {
     border-top: solid $panel;
     padding-top: 1;
-    height: auto;
+    height: 1fr;
+    overflow-y: auto;
 }
 
 #settings-footer {
     color: $text-muted;
-    margin-top: 1;
+    padding: 0 1;
+    height: auto;
+    border-top: solid $panel;
     text-align: center;
 }
 

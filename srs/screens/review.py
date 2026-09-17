@@ -12,6 +12,7 @@ from textual.widgets import Label, ListItem, ListView, Markdown, Static
 
 from srs import cards, config
 from srs.editor import find_editor, is_vim_family
+from srs.screens.session_summary import SessionSummaryScreen
 
 if TYPE_CHECKING:
     from srs.app import CramApp
@@ -110,6 +111,13 @@ class ReviewScreen(Screen):
     def on_mount(self) -> None:
         self._due: list[dict] = []
         self._selected_card: dict | None = None
+        # Session stat counters
+        self._session_reviewed: int = 0
+        self._session_again: int = 0
+        self._session_hard: int = 0
+        self._session_good: int = 0
+        self._session_easy: int = 0
+        self._session_intervals: list[float] = []
         self._populate_due()
         self.query_one("#review-preview-pane", Vertical).border_title = " preview "
 
@@ -387,9 +395,40 @@ class ReviewScreen(Screen):
             cram_app: CramApp = self.app  # type: ignore[assignment]
             cram_app.sync_git_background()
 
+            # Accumulate session stats
+            self._session_reviewed += 1
+            if grade == 1:
+                self._session_again += 1
+            elif grade == 2:
+                self._session_hard += 1
+            elif grade == 3:
+                self._session_good += 1
+            elif grade == 4:
+                self._session_easy += 1
+            self._session_intervals.append(float(target.get("interval", 1)))
+
         self._populate_due()
         if not self._due:
-            self.app.pop_screen()
+            avg_iv = (
+                sum(self._session_intervals) / len(self._session_intervals)
+                if self._session_intervals
+                else 0.0
+            )
+
+            def _after_summary(_: object) -> None:
+                self.app.pop_screen()
+
+            self.app.push_screen(
+                SessionSummaryScreen(
+                    cards_reviewed=self._session_reviewed,
+                    again=self._session_again,
+                    hard=self._session_hard,
+                    good=self._session_good,
+                    easy=self._session_easy,
+                    avg_interval=avg_iv,
+                ),
+                _after_summary,
+            )
 
     def action_skip_card(self) -> None:
         if not self._due:

@@ -109,6 +109,7 @@ class HomeScreen(Screen):
                         yield Static("", id="home-stats-details")
                         yield Static("", id="home-config-details")
                     yield Static("", id="home-topics-details")
+                    yield Static("", id="home-onboarding")
         yield Static(
             "  j/k: navigate  o/Enter: select  q: quit",
             id="home-footer",
