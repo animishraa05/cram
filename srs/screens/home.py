@@ -99,6 +99,7 @@ class HomeScreen(Screen):
                         ListItem(Label("Review Due")),
                         ListItem(Label("Browse Cards")),
                         ListItem(Label("Sync LeetCode")),
+                        ListItem(Label("Stats & Analytics")),
                         ListItem(Label("Settings")),
                         id="home-menu",
                     )
@@ -204,6 +205,8 @@ class HomeScreen(Screen):
             case 4:
                 self._do_sync()
             case 5:
+                self.app.push_screen("stats")
+            case 6:
                 self.app.push_screen("settings")
 
     def _do_sync(self) -> None:

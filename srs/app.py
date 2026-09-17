@@ -15,6 +15,7 @@ from srs.screens.home import HomeScreen
 from srs.screens.review import ReviewScreen
 from srs.screens.settings import SettingsScreen
 from srs.screens.setup import SetupScreen
+from srs.screens.stats import StatsScreen
 from srs.theme import THEMES
 
 
@@ -31,10 +32,12 @@ class CramApp(App):
         "browse": BrowseScreen,
         "setup": SetupScreen,
         "settings": SettingsScreen,
+        "stats": StatsScreen,
     }
 
     BINDINGS = [
         ("q", "quit", "Quit"),
+        ("t", "push_screen('stats')", "Stats"),
     ]
 
     def __init__(self, cli_target: str | None = None) -> None:
