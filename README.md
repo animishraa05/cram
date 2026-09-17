@@ -2,17 +2,17 @@
 
 Spaced repetition TUI for programming problems and academic concepts, powered by FSRS-4.5.
 
-cram helps you remember LeetCode problems and study complex concepts using spaced repetition. It syncs your recent LeetCode submissions, creates notes in your Obsidian vault, and schedules reviews when the forgetting curve says you should revisit a card.
+cram helps you remember LeetCode problems and study complex concepts using spaced repetition. It optionally syncs your recent LeetCode submissions, can save notes in your Obsidian vault (or in a local notes folder if you prefer), and schedules reviews when the forgetting curve says you should revisit a card.
 
 ---
 
 ## Key Features
 
 - **LeetCode Integration**: Automatically syncs accepted submissions from the last 24 hours.
-- **Obsidian-First**: All card details and templates are saved as standard Markdown files inside your Obsidian vault.
+- **Obsidian-Optional**: Card notes are saved as standard Markdown files — inside your Obsidian vault if configured, or in a local notes folder (`~/.local/share/cram/notes`) otherwise.
 - **FSRS-4.5 Engine**: Powered by the modern Free Spaced Repetition Scheduler, displaying exact recall probabilities and next review intervals (like Anki).
 - **Dual-Pane Dashboard TUI**: Full-screen split panes with rounded borders, dynamic title updates, active due card alerts, and stats grids.
-- **Embedded Note Editor**: Toggle between your standard command-line editor (`nvim`/`vim`) and a native, inline Markdown text editor (`TextArea`) directly inside the TUI viewport.
+- **Flexible Note Editor**: Choose between a native, inline Markdown editor (`TextArea`) built right into the TUI (default), or any external editor you prefer (`nvim`, `vim`, `code`, etc.).
 - **Silent Git Auto-Backup**: Automatically commits and pushes note modifications and card logs to your private Git repositories in background threads.
 - **Developer-Centric UX**: Standard Vim navigation (`j`/`k`/`o`/`Enter`/`Esc`), hotkeys, and left/right arrow key navigation for horizontal dialog boxes.
 
@@ -38,7 +38,7 @@ sudo apt install pipx
 ```
 
 **Optional:**
-- `nvim` or `vim` — for editing notes (if using external editor mode; falls back to `$EDITOR` / `$VISUAL`)
+- `nvim`, `vim`, or any other editor — only needed if you use **external editor mode** (default is **embedded**).
 - `dunst` + `dunstify` — for desktop notifications
 
 ### Install cram
@@ -77,8 +77,8 @@ make uninstall
 ## Quick Start
 
 1. Run `cram` in your terminal — the setup wizard will guide you through config creation.
-2. Set your Obsidian vault path, problem folder, and LeetCode username.
-3. On the dashboard menu, select **Sync LeetCode** (or run `cram sync` in your CLI) to import your last 24h LeetCode solves.
+2. Optionally set your Obsidian vault path. If left blank, notes are saved locally at `~/.local/share/cram/notes`.
+3. Optionally set your LeetCode username and run **Sync LeetCode** to import solves.
 4. Select **Review Queue** to start studying cards.
 
 ---
@@ -192,12 +192,13 @@ cram will silently back up your Obsidian notes and card logs in a background thr
 Config is stored at `~/.config/cram/config`:
 
 ```ini
-OBSIDIAN_VAULT="$HOME/blog/content"
+OBSIDIAN_VAULT="$HOME/blog/content"  # Optional — leave empty for local notes
 PROBLEM_FOLDER="Private/Daily/Problems"
-LEETCODE_USERNAME="your-leetcode-username"
+LEETCODE_USERNAME="your-leetcode-username"  # Optional
 DESIRED_RETENTION=0.9
 THEME="tokyonight"
-EDITOR_MODE="external"
+EDITOR_MODE="embedded"  # 'embedded' (default) or 'external'
+EDITOR=""               # External editor command — only used when EDITOR_MODE=external
 CARDS_FILE="$HOME/.local/share/cram/cards.json"
 
 # Notification Settings

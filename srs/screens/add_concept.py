@@ -157,7 +157,6 @@ class AddConceptScreen(Screen):
                 "concept", title, subject=subject, folder=subject, filename=filename
             )
 
-        editor = find_editor()
         if config.editor_mode() == "embedded":
             from srs.screens.editor import EditorScreen
 
@@ -271,7 +270,10 @@ class AddConceptScreen(Screen):
         filename = _sanitize(title) + ".md"
 
         subject_folder = (vault / subject).resolve()
-        if not str(subject_folder).startswith(str(vault.resolve())):
+        vault_resolved = vault.resolve()
+        try:
+            subject_folder.relative_to(vault_resolved)
+        except ValueError:
             self.notify("Invalid subject path", severity="error")
             self.app.pop_screen()
             return

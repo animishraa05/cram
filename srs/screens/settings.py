@@ -44,7 +44,7 @@ class SettingsScreen(Screen):
                     yield Label("Editor Command (e.g. nvim, vim, code):")
                     yield Input(placeholder="nvim", id="editor-cmd-input")
                     yield Label("Editor Mode (external/embedded):")
-                    yield Input(placeholder="external", id="editor-mode-input")
+                    yield Input(placeholder="embedded", id="editor-mode-input")
                 with Vertical(id="right-col"):
                     with Vertical(id="theme-col"):
                         yield Static("Theme Selection", classes="col-title")
@@ -90,7 +90,9 @@ class SettingsScreen(Screen):
             col.mount(label)
 
     def _build_config_values(self) -> None:
-        self.query_one("#vault-input", Input).value = str(config.vault())
+        # Show the raw configured vault path, not the computed fallback
+        raw_vault = config.get("OBSIDIAN_VAULT", "")
+        self.query_one("#vault-input", Input).value = raw_vault
         self.query_one("#folder-input", Input).value = config.problem_folder()
         self.query_one("#leetcode-input", Input).value = config.leetcode_username() or ""
         self.query_one("#retention-input", Input).value = str(config.desired_retention())
@@ -133,6 +135,7 @@ class SettingsScreen(Screen):
     def action_save_settings(self) -> None:
         from srs.config import invalidate_cache, save_config
 
+        notify_enabled_val = self.query_one("#notify-input", Input).value.strip().lower()
         cfg = {
             "OBSIDIAN_VAULT": self.query_one("#vault-input", Input).value.strip(),
             "PROBLEM_FOLDER": self.query_one("#folder-input", Input).value.strip(),
@@ -147,6 +150,17 @@ class SettingsScreen(Screen):
         }
         save_config(cfg)
         invalidate_cache()
+
+        # Update systemd user timer based on the new setting
+        try:
+            from srs.notifications import remove_notifications, setup_notifications
+            if notify_enabled_val in ("true", "1", "yes"):
+                setup_notifications()
+            else:
+                remove_notifications()
+        except Exception:
+            pass
+
         self.notify("Settings saved")
         self.app.theme = f"cram-{self._new_theme}"
         self.app.pop_screen()

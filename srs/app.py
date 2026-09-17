@@ -102,28 +102,175 @@ class CramApp(App):
         sync_all_background(config.vault(), config.cards_file(), on_sync_done)
 
 
-HELP_TEXT = """\
-cram - spaced repetition for problems & concepts
+def print_help() -> None:
+    """Print a rich, fully-formatted help page to the terminal."""
+    from importlib.metadata import PackageNotFoundError, version
 
-Usage: cram [command]
+    from rich.console import Console
+    from rich.padding import Padding
+    from rich.rule import Rule
+    from rich.style import Style
+    from rich.table import Table
+    from rich.text import Text
 
-Commands:
-  (no command)            Open TUI home screen
-  add-problem             Open problem picker
-  add-concept             Open concept form
-  review                  Open review queue
-  browse                  Browse all cards
-  sync                    Fetch last-24h LeetCode submissions
-  sync-concepts           Import concepts from Obsidian vault
-  export                  Export cards as CSV to stdout
-  import FILE             Import cards from Anki TSV export
-  notify                  Send dunst notification for due cards
-  setup-notifications     Enable hourly dunst notifications (systemd timer)
-  remove-notifications    Disable hourly notifications
+    try:
+        ver = version("cram")
+    except PackageNotFoundError:
+        ver = "dev"
 
-Options:
-  --help, -h              Show this help message
-  --version, -v           Show version"""
+    console = Console()
+
+    # ── Header ────────────────────────────────────────────────────────
+    console.print()
+    header = Text()
+    header.append("cram", style="bold cyan")
+    header.append(f"  v{ver}", style="dim")
+    header.append("  —  spaced repetition for problems & concepts", style="")
+    console.print(header)
+    console.print(Rule(style="dim"))
+
+    # ── Usage ─────────────────────────────────────────────────────────
+    console.print(Padding(Text("USAGE", style="bold yellow"), (1, 0, 0, 0)))
+    console.print("  [bold]cram[/bold] [dim][[command]] [[options]][/dim]")
+
+    # ── TUI Commands ──────────────────────────────────────────────────
+    console.print(Padding(Text("TUI COMMANDS", style="bold yellow"), (1, 0, 0, 0)))
+    tui_table = Table(show_header=False, box=None, padding=(0, 2))
+    tui_table.add_column(style="bold cyan", no_wrap=True)
+    tui_table.add_column(style="")
+    tui_commands = [
+        ("cram",            "Open the home dashboard (default)"),
+        ("cram add-problem", "Open the problem picker / creator"),
+        ("cram add-concept", "Open the concept form"),
+        ("cram review",     "Jump straight to the review queue"),
+        ("cram browse",     "Browse, search, and manage all cards"),
+    ]
+    for cmd, desc in tui_commands:
+        tui_table.add_row(cmd, desc)
+    console.print(tui_table)
+
+    # ── CLI Commands ──────────────────────────────────────────────────
+    console.print(Padding(Text("CLI COMMANDS", style="bold yellow"), (1, 0, 0, 0)))
+    cli_table = Table(show_header=False, box=None, padding=(0, 2))
+    cli_table.add_column(style="bold cyan", no_wrap=True)
+    cli_table.add_column(style="")
+    cli_commands = [
+        ("cram sync",                  "Fetch last-24h accepted LeetCode submissions"),
+        ("cram sync-concepts",         "Scan vault/notes folder and import concept cards"),
+        ("cram export",                "Export all cards as CSV to stdout"),
+        ("cram import FILE",           "Import cards from an Anki TSV export file"),
+        ("cram notify",                "Send a dunst desktop notification for due cards"),
+        ("cram setup-notifications",   "Enable hourly reminders via systemd user timer"),
+        ("cram remove-notifications",  "Disable the hourly systemd reminder"),
+    ]
+    for cmd, desc in cli_commands:
+        cli_table.add_row(cmd, desc)
+    console.print(cli_table)
+
+    # ── Options ───────────────────────────────────────────────────────
+    console.print(Padding(Text("OPTIONS", style="bold yellow"), (1, 0, 0, 0)))
+    opt_table = Table(show_header=False, box=None, padding=(0, 2))
+    opt_table.add_column(style="bold cyan", no_wrap=True)
+    opt_table.add_column(style="")
+    opt_table.add_row("--help,    -h", "Show this help message")
+    opt_table.add_row("--version, -v", "Print version and exit")
+    console.print(opt_table)
+
+    # ── TUI Keybindings ───────────────────────────────────────────────
+    console.print(Padding(Text("TUI KEYBINDINGS", style="bold yellow"), (1, 0, 0, 0)))
+    key_table = Table(show_header=True, box=None, padding=(0, 2), header_style="dim")
+    key_table.add_column("Key", style="bold magenta", no_wrap=True)
+    key_table.add_column("Where", style="dim", no_wrap=True)
+    key_table.add_column("Action", style="")
+    keybindings = [
+        ("j / k",     "Anywhere",      "Move cursor down / up"),
+        ("o / Enter", "Anywhere",      "Select / confirm"),
+        ("Esc",       "Anywhere",      "Go back / cancel"),
+        ("q",         "Home",          "Quit (with confirm dialog)"),
+        (",",         "Anywhere",      "Open Settings"),
+        ("/",         "Browse",        "Focus search box"),
+        ("n",         "Review",        "Skip selected card"),
+        ("d",         "Browse",        "Delete selected card"),
+        ("e",         "Browse",        "Edit topic of selected card"),
+        ("a/h/g/e",   "Rating dialog", "Rate: Again / Hard / Good / Easy"),
+        ("← →",       "Rating dialog", "Move focus between rating buttons"),
+        ("Ctrl+s",    "Settings",      "Save settings"),
+        ("Ctrl+s",    "Embedded editor","Save note and close editor"),
+        ("Ctrl+h/l",  "Settings",      "Focus config column / theme column"),
+    ]
+    for key, where, action in keybindings:
+        key_table.add_row(key, where, action)
+    console.print(key_table)
+
+    # ── Spaced Repetition Ratings ─────────────────────────────────────
+    console.print(Padding(Text("REVIEW RATINGS  (FSRS-4.5)", style="bold yellow"), (1, 0, 0, 0)))
+    rate_table = Table(show_header=True, box=None, padding=(0, 2), header_style="dim")
+    rate_table.add_column("Key", style="bold magenta", no_wrap=True)
+    rate_table.add_column("Grade", no_wrap=True)
+    rate_table.add_column("Meaning")
+    rate_table.add_row("a", "Again", "Complete blackout — couldn't recall at all  (~next: 1d)")
+    rate_table.add_row("h", "Hard",  "Significant effort to recall               (~next: 4d)")
+    rate_table.add_row("g", "Good",  "Some thought needed, but got it            (~next: 12d)")
+    rate_table.add_row("e", "Easy",  "Instant recall, no effort                  (~next: 28d)")
+    console.print(rate_table)
+
+    # ── Config ────────────────────────────────────────────────────────
+    console.print(Padding(Text("CONFIG FILE", style="bold yellow"), (1, 0, 0, 0)))
+    console.print("  [dim]Location:[/dim]  [bold]~/.config/cram/config[/bold]")
+    console.print()
+    cfg_table = Table(show_header=True, box=None, padding=(0, 2), header_style="dim")
+    cfg_table.add_column("Key", style="bold cyan", no_wrap=True)
+    cfg_table.add_column("Default", style="green", no_wrap=True)
+    cfg_table.add_column("Description")
+    cfg_entries = [
+        ("OBSIDIAN_VAULT",   "(empty)",  "Path to Obsidian vault — optional, uses local notes dir if unset"),
+        ("PROBLEM_FOLDER",  "Private/Daily/Problems", "Sub-folder inside vault for problem notes"),
+        ("LEETCODE_USERNAME","(empty)",  "Your LeetCode handle — optional, needed only for sync"),
+        ("DESIRED_RETENTION","0.9",      "Target recall probability: 0.85–0.95 (default 0.9)"),
+        ("EDITOR_MODE",      "embedded", "'embedded' (built-in TextArea) or 'external' (any editor)"),
+        ("EDITOR",           "(auto)",   "Editor command when EDITOR_MODE=external (e.g. nvim, code)"),
+        ("THEME",            "tokyonight","Color theme name (see list below)"),
+        ("NOTIFY_ENABLED",   "true",     "Enable/disable background due-card reminders"),
+        ("NOTIFY_INTERVAL",  "3600",     "Reminder frequency in seconds (minimum 60)"),
+        ("CARDS_FILE",       "~/.local/share/cram/cards.json", "Override path for the cards database"),
+    ]
+    for key, default, desc in cfg_entries:
+        cfg_table.add_row(key, default, desc)
+    console.print(cfg_table)
+
+    # ── Themes ────────────────────────────────────────────────────────
+    console.print(Padding(Text("THEMES", style="bold yellow"), (1, 0, 0, 0)))
+    console.print(
+        "  [cyan]default[/cyan]  [cyan]dracula[/cyan]  [cyan]gruvbox[/cyan]  "
+        "[cyan]nord[/cyan]  [cyan]tokyonight[/cyan]  [cyan]catppuccin[/cyan]  "
+        "[cyan]solarized[/cyan]  [cyan]forest[/cyan]"
+    )
+    console.print("  Change with [bold]cram[/bold] → Settings → Theme Selection [dim](live preview)[/dim]")
+
+    # ── Examples ─────────────────────────────────────────────────────
+    console.print(Padding(Text("EXAMPLES", style="bold yellow"), (1, 0, 0, 0)))
+    ex_table = Table(show_header=False, box=None, padding=(0, 2))
+    ex_table.add_column(style="bold cyan", no_wrap=True)
+    ex_table.add_column(style="dim")
+    examples = [
+        ("cram",                    "# open the TUI home dashboard"),
+        ("cram review",             "# jump straight to due-card review"),
+        ("cram sync",               "# import today's LeetCode solves"),
+        ("cram sync-concepts",      "# import concepts from vault/notes"),
+        ("cram export > cards.csv", "# export everything to a CSV file"),
+        ("cram import anki.txt",    "# bulk-import from Anki TSV export"),
+    ]
+    for cmd, comment in examples:
+        ex_table.add_row(cmd, comment)
+    console.print(ex_table)
+
+    # ── Footer ────────────────────────────────────────────────────────
+    console.print(Rule(style="dim"))
+    console.print(
+        "  [dim]Docs & source:[/dim]  "
+        "[bold cyan]https://github.com/animishraa05/cram[/bold cyan]"
+    )
+    console.print()
 
 
 def main() -> None:
@@ -137,7 +284,7 @@ def main() -> None:
     args = sys.argv[1:]
 
     if "--help" in args or "-h" in args:
-        print(HELP_TEXT)
+        print_help()
         sys.exit(0)
 
     if "--version" in args or "-v" in args:

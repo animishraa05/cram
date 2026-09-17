@@ -141,7 +141,7 @@ class SetupScreen(Screen):
             yield Static(f"Step 1 of {_TOTAL}: Obsidian Vault", id="setup-step")
 
             # 0 — Vault
-            yield Label("Path to your Obsidian vault (required):")
+            yield Label("Path to your Obsidian vault (optional, leave blank for default):")
             yield Input(placeholder="~/vault  or  /home/user/notes", id="vault-input")
 
             # 1 — Folder
@@ -261,7 +261,7 @@ class SetupScreen(Screen):
             Label("embedded  — inline editor inside the cram TUI window"),
             id="em-embedded",
         ))
-        em.index = 0
+        em.index = 1
 
         # Theme list
         tl = self.query_one("#theme-list", ListView)
@@ -426,12 +426,12 @@ class SetupScreen(Screen):
         if self._pending_vault is not None:
             self._pending_vault = None
             raw = self.query_one("#vault-input", Input).value.strip()
-            self._apply_vault(Path(raw).expanduser().resolve())
+            self._apply_vault(Path(raw).expanduser().resolve() if raw else None)
             return
 
         raw = self.query_one("#vault-input", Input).value.strip()
         if not raw:
-            self.query_one("#setup-status", Static).update("  Vault path is required!")
+            self._apply_vault(None)
             return
 
         vault = Path(raw).expanduser().resolve()
@@ -443,9 +443,14 @@ class SetupScreen(Screen):
             return
         self._apply_vault(vault)
 
-    def _apply_vault(self, vault: Path) -> None:
-        vault.mkdir(parents=True, exist_ok=True)
-        self._cfg["OBSIDIAN_VAULT"] = str(vault)
+    def _apply_vault(self, vault: Path | None) -> None:
+        if vault is not None:
+            vault.mkdir(parents=True, exist_ok=True)
+            self._cfg["OBSIDIAN_VAULT"] = str(vault)
+            vault_path_str = str(vault)
+        else:
+            self._cfg["OBSIDIAN_VAULT"] = ""
+            vault_path_str = "Default local notes"
         # Update cards-loc list to include vault-relative option
         try:
             cl = self.query_one("#cards-loc-list", ListView)
@@ -453,18 +458,19 @@ class SetupScreen(Screen):
             default_path = (
                 Path.home() / ".local" / "share" / "cram" / "cards.json"
             )
-            vault_path = vault / ".cram" / "cards.json"
             cl.append(ListItem(
                 Label(f"Default: {default_path}"), id="cl-default"
             ))
-            cl.append(ListItem(
-                Label(f"In vault: {vault_path}  (synced via git ✓)"), id="cl-vault"
-            ))
+            if vault is not None:
+                vault_path = vault / ".cram" / "cards.json"
+                cl.append(ListItem(
+                    Label(f"In vault: {vault_path}  (synced via git ✓)"), id="cl-vault"
+                ))
             cl.append(ListItem(Label("Custom path — type below"), id="cl-custom"))
             cl.index = 0
         except Exception:
             pass
-        self._advance(1, hint=f"  Vault: {vault}")
+        self._advance(1, hint=f"  Vault: {vault_path_str}")
 
     def _handle_folder(self) -> None:
         folder = self.query_one("#folder-input", Input).value.strip()
@@ -539,8 +545,13 @@ class SetupScreen(Screen):
         if custom_path:
             self._cfg["CARDS_FILE"] = custom_path
         elif idx == 1:
-            vault = Path(self._cfg.get("OBSIDIAN_VAULT", str(Path.home())))
-            self._cfg["CARDS_FILE"] = str(vault / ".cram" / "cards.json")
+            vault_str = self._cfg.get("OBSIDIAN_VAULT", "")
+            if vault_str:
+                vault = Path(vault_str)
+                self._cfg["CARDS_FILE"] = str(vault / ".cram" / "cards.json")
+            else:
+                # Vault not configured — fall through to default
+                pass
         elif idx == 2:
             self.query_one("#cards-loc-input", Input).focus()
             self.query_one("#setup-status", Static).update(
@@ -553,7 +564,13 @@ class SetupScreen(Screen):
 
     def _check_git_and_advance(self) -> None:
         """Check vault git status and show warning if no remote."""
-        vault = Path(self._cfg.get("OBSIDIAN_VAULT", ""))
+        vault_str = self._cfg.get("OBSIDIAN_VAULT", "")
+        if not vault_str:
+            # No Obsidian vault configured — git backup doesn't apply, skip to anki
+            self._advance(9, hint="  No vault set — git backup skipped.")
+            return
+
+        vault = Path(vault_str)
         has_git = False
         has_remote = False
 
@@ -641,14 +658,14 @@ class SetupScreen(Screen):
         self._advance(10)
 
     def _build_summary(self) -> None:
-        vault = self._cfg.get("OBSIDIAN_VAULT", "—")
+        vault = self._cfg.get("OBSIDIAN_VAULT", "") or "(local default: ~/.local/share/cram/notes)"
         folder = self._cfg.get("PROBLEM_FOLDER", "Private/Daily/Problems")
-        lc = self._cfg.get("LEETCODE_USERNAME", "—")
-        editor = self._cfg.get("EDITOR", "auto-detect")
-        mode = self._cfg.get("EDITOR_MODE", "external")
+        lc = self._cfg.get("LEETCODE_USERNAME", "") or "—"
+        editor = self._cfg.get("EDITOR", "auto-detect") or "auto-detect"
+        mode = self._cfg.get("EDITOR_MODE", "embedded")
         theme = self._cfg.get("THEME", "tokyonight")
         notify = self._cfg.get("NOTIFY_ENABLED", "false")
-        cards_loc = self._cfg.get("CARDS_FILE", "~/.local/share/cram/cards.json")
+        cards_loc = self._cfg.get("CARDS_FILE", "") or "~/.local/share/cram/cards.json"
         anki = f"{self._anki_imported} cards imported" if self._anki_imported else "skipped"
 
         summary = (
@@ -681,12 +698,14 @@ class SetupScreen(Screen):
             )
 
         # Wire up systemd notifications if user enabled them
-        if self._cfg.get("NOTIFY_ENABLED", "false") == "true":
-            try:
-                from srs.notifications import setup_notifications
+        try:
+            from srs.notifications import remove_notifications, setup_notifications
+            if self._cfg.get("NOTIFY_ENABLED", "false").lower() in ("true", "1", "yes"):
                 setup_notifications()  # creates systemd user timer
-            except Exception:
-                pass  # non-fatal — in-app notifications still work
+            else:
+                remove_notifications() # removes systemd user timer
+        except Exception:
+            pass  # non-fatal — in-app notifications still work
 
         self._build_tips()
         self._advance(11, hint="  Config saved. Read the tips below, then press Enter.")

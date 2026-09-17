@@ -74,7 +74,10 @@ def cards_file() -> Path:
 
 
 def vault() -> Path:
-    return Path(get("OBSIDIAN_VAULT", str(Path.home() / "blog" / "content")))
+    val = get("OBSIDIAN_VAULT", "")
+    if val:
+        return Path(val)
+    return Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local" / "share")) / "cram" / "notes"
 
 
 def problem_folder() -> str:
@@ -110,12 +113,12 @@ def notify_interval() -> int:
 
 def is_configured() -> bool:
     cfg_path = config_path()
-    return cfg_path.exists() and vault().exists()
+    return cfg_path.exists()
 
 
 def editor_mode() -> str:
-    mode = get("EDITOR_MODE", "external").lower().strip()
-    return mode if mode in ("external", "embedded") else "external"
+    mode = get("EDITOR_MODE", "embedded").lower().strip()
+    return mode if mode in ("external", "embedded") else "embedded"
 
 
 def preferred_editor() -> str:
