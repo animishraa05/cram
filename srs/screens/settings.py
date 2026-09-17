@@ -5,7 +5,7 @@ from __future__ import annotations
 from textual.app import ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.screen import Screen
-from textual.widgets import Input, Label, ListItem, ListView, Static
+from textual.widgets import Input, Label, ListItem, ListView, Static, Switch
 
 from srs import config
 from srs.theme import THEMES, get_theme
@@ -37,8 +37,9 @@ class SettingsScreen(Screen):
                     yield Input(placeholder="username", id="leetcode-input")
                     yield Label("Retention (0.0-1.0):")
                     yield Input(placeholder="0.9", id="retention-input")
-                    yield Label("Notifications (true/false):")
-                    yield Input(placeholder="true", id="notify-input")
+                    with Horizontal(id="notify-row"):
+                        yield Label("Notifications:")
+                        yield Switch(id="notify-switch", animate=False)
                     yield Label("Notify Interval (seconds):")
                     yield Input(placeholder="3600", id="interval-input")
                     yield Label("Editor Command (e.g. nvim, vim, code):")
@@ -54,6 +55,21 @@ class SettingsScreen(Screen):
                 "ctrl+h: config  ctrl+l: themes  j/k: select theme  ctrl+s: save  Esc: back",
                 id="settings-footer",
             )
+
+    DEFAULT_CSS = """
+    #notify-row {
+        height: auto;
+        align: left middle;
+        margin-bottom: 1;
+    }
+    #notify-row Label {
+        margin-right: 1;
+        margin-top: 0;
+    }
+    #notify-switch {
+        margin-top: 0;
+    }
+    """
 
     def on_mount(self) -> None:
         self._selected_idx = 0
@@ -96,7 +112,7 @@ class SettingsScreen(Screen):
         self.query_one("#folder-input", Input).value = config.problem_folder()
         self.query_one("#leetcode-input", Input).value = config.leetcode_username() or ""
         self.query_one("#retention-input", Input).value = str(config.desired_retention())
-        self.query_one("#notify-input", Input).value = str(config.notify_enabled()).lower()
+        self.query_one("#notify-switch", Switch).value = config.notify_enabled()
         self.query_one("#interval-input", Input).value = str(config.notify_interval())
         self.query_one("#editor-cmd-input", Input).value = config.preferred_editor()
         self.query_one("#editor-mode-input", Input).value = config.editor_mode()
@@ -135,13 +151,13 @@ class SettingsScreen(Screen):
     def action_save_settings(self) -> None:
         from srs.config import invalidate_cache, save_config
 
-        notify_enabled_val = self.query_one("#notify-input", Input).value.strip().lower()
+        notify_on = self.query_one("#notify-switch", Switch).value
         cfg = {
             "OBSIDIAN_VAULT": self.query_one("#vault-input", Input).value.strip(),
             "PROBLEM_FOLDER": self.query_one("#folder-input", Input).value.strip(),
             "LEETCODE_USERNAME": self.query_one("#leetcode-input", Input).value.strip(),
             "DESIRED_RETENTION": self.query_one("#retention-input", Input).value.strip(),
-            "NOTIFY_ENABLED": self.query_one("#notify-input", Input).value.strip(),
+            "NOTIFY_ENABLED": "true" if notify_on else "false",
             "NOTIFY_INTERVAL": self.query_one("#interval-input", Input).value.strip(),
             "EDITOR": self.query_one("#editor-cmd-input", Input).value.strip(),
             "EDITOR_MODE": self.query_one("#editor-mode-input", Input).value.strip(),
@@ -151,10 +167,10 @@ class SettingsScreen(Screen):
         save_config(cfg)
         invalidate_cache()
 
-        # Update systemd user timer based on the new setting
+        # Update systemd user timer based on the toggle state
         try:
             from srs.notifications import remove_notifications, setup_notifications
-            if notify_enabled_val in ("true", "1", "yes"):
+            if notify_on:
                 setup_notifications()
             else:
                 remove_notifications()
