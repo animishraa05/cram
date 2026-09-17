@@ -484,3 +484,133 @@ Button.-warning {
 Button.-error {
     border: solid $error;
 }
+
+/* ============================================
+   Stats & Analytics Screen
+   ============================================ */
+
+#stats-container {
+    height: 1fr;
+    padding: 1;
+}
+
+#stats-title {
+    text-style: bold;
+    color: $foreground;
+    padding: 0 1;
+    margin-left: 2;
+    width: 100%;
+    border-bottom: solid $primary;
+    margin-bottom: 1;
+}
+
+#stats-summary-bar {
+    background: $surface;
+    border: round $panel;
+    padding: 0 2;
+    height: 3;
+    content-align: left middle;
+    margin-bottom: 1;
+}
+
+#stats-middle {
+    height: 1fr;
+    margin-bottom: 1;
+}
+
+#stats-topic-pane {
+    width: 55%;
+    border: round $panel;
+    padding: 0 1;
+    margin-right: 1;
+}
+
+#stats-topic-pane:focus-within {
+    border: round $primary;
+}
+
+#stats-topic-label {
+    text-style: bold;
+    color: $primary;
+    margin-bottom: 0;
+}
+
+#stats-topic-table {
+    height: 1fr;
+    border: none;
+}
+
+#stats-activity-pane {
+    width: 45%;
+    border: round $panel;
+    padding: 1 2;
+}
+
+#stats-activity-label {
+    text-style: bold;
+    color: $primary;
+    margin-bottom: 1;
+}
+
+#stats-sparkline {
+    color: $accent;
+    margin-bottom: 1;
+}
+
+#stats-activity-meta {
+    color: $text-muted;
+    margin-top: 1;
+}
+
+#stats-health-pane {
+    height: auto;
+    max-height: 14;
+    border: round $panel;
+    padding: 0 1;
+}
+
+#stats-health-pane:focus-within {
+    border: round $primary;
+}
+
+#stats-health-label {
+    text-style: bold;
+    color: $primary;
+    margin-bottom: 0;
+}
+
+#stats-health-tables {
+    height: 1fr;
+}
+
+#stats-ret-wrap {
+    width: 1fr;
+    padding-right: 1;
+}
+
+#stats-lapse-wrap {
+    width: 1fr;
+    border-left: solid $panel;
+    padding-left: 1;
+}
+
+#stats-ret-label,
+#stats-lapse-label {
+    color: $text-muted;
+    text-style: bold;
+    margin-bottom: 0;
+}
+
+#stats-ret-table,
+#stats-lapse-table {
+    height: auto;
+    max-height: 8;
+    border: none;
+}
+
+#stats-footer {
+    color: $text-muted;
+    padding: 0 0 0 2;
+    dock: bottom;
+    width: 100%;
+}
