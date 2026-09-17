@@ -493,6 +493,118 @@ Button.-error {
     border: solid $error;
 }
 
+
+/* ============================================
+   Help Screen
+   ============================================ */
+
+HelpScreen {
+    align: center middle;
+    background: $background 80%;
+}
+
+#help-container {
+    width: 80;
+    max-width: 95%;
+    height: auto;
+    max-height: 90%;
+    background: $surface;
+    border: round $panel;
+    padding: 1 2;
+}
+
+#help-title {
+    text-style: bold;
+    color: $foreground;
+    padding: 0 1;
+    margin-bottom: 1;
+    width: 100%;
+    content-align-horizontal: center;
+    border-bottom: solid $primary;
+}
+
+#help-table {
+    height: auto;
+    width: 100%;
+    margin-bottom: 1;
+}
+
+#help-footer {
+    color: $text-muted;
+    width: 100%;
+    content-align-horizontal: center;
+    border-top: solid $panel;
+    padding-top: 1;
+}
+
+/* ============================================
+   Session Summary Screen
+   ============================================ */
+
+SessionSummaryScreen {
+    align: center middle;
+    background: $background 75%;
+}
+
+#summary-container {
+    width: 58;
+    max-width: 90%;
+    height: auto;
+    background: $surface;
+    border: round $primary;
+    padding: 1 2;
+}
+
+#summary-title {
+    text-style: bold;
+    color: $foreground;
+    padding: 0 1;
+    margin-bottom: 1;
+    width: 100%;
+    content-align-horizontal: center;
+    border-bottom: solid $primary;
+}
+
+#summary-stats {
+    width: 100%;
+    padding: 0 1;
+    margin-bottom: 1;
+}
+
+#summary-ratings {
+    width: 100%;
+    padding: 0 1;
+    margin-bottom: 1;
+    border: round $panel;
+}
+
+#summary-motivational {
+    width: 100%;
+    padding: 0 1;
+    content-align-horizontal: center;
+    margin-bottom: 1;
+}
+
+#summary-footer {
+    color: $text-muted;
+    width: 100%;
+    content-align-horizontal: center;
+    border-top: solid $panel;
+    padding-top: 1;
+}
+
+/* ============================================
+   Onboarding Checklist (Home Screen)
+   ============================================ */
+
+#home-onboarding {
+    border: round $panel;
+    padding: 0 1;
+    margin-top: 1;
+    color: $foreground;
+    height: auto;
+}
+
 /* ============================================
    Stats & Analytics Screen
    ============================================ */
