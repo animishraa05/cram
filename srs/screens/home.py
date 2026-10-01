@@ -109,6 +109,7 @@ class HomeScreen(Screen):
                         yield Static("", id="home-stats-details")
                         yield Static("", id="home-config-details")
                     yield Static("", id="home-topics-details")
+                    yield Static("", id="home-onboarding")
         yield Static(
             "  j/k: navigate  o/Enter: select  q: quit",
             id="home-footer",
@@ -183,7 +184,43 @@ class HomeScreen(Screen):
                     lines.append(f"* {topic}: {count}")
                 topics_details.update("\n".join(lines))
             else:
-                topics_details.update("No categories reviewed yet.")
+                topics_details.update("""No categories reviewed yet.""")
+        except Exception:
+            pass
+
+        # 5. Onboarding checklist
+        try:
+            onboarding = self.query_one("#home-onboarding", Static)
+            all_cards: list[dict] = []
+            for key in ("problem_cards", "concept_cards"):
+                all_cards.extend(data.get(key, []))
+
+            vault_set = bool(config.get("OBSIDIAN_VAULT", ""))
+            has_cards = len(all_cards) > 0
+            has_review = any(c.get("review_count", 0) > 0 for c in all_cards)
+
+            if vault_set and has_cards and has_review:
+                # All done — hide the checklist
+                onboarding.update("")
+                onboarding.display = False
+            else:
+                onboarding.display = True
+                check = "[bold green]✅[/]"
+                todo  = "[dim]○[/]"
+                lines = ["[bold]Getting started:[/]"]
+                lines.append(
+                    f"  {check if vault_set else todo}  Configure your vault"
+                    + ("" if vault_set else " [dim](set OBSIDIAN_VAULT in Settings)[/]")
+                )
+                lines.append(
+                    f"  {check if has_cards else todo}  Add your first card"
+                    + ("" if has_cards else " [dim](Add Problem / Add Concept)[/]")
+                )
+                lines.append(
+                    f"  {check if has_review else todo}  Complete your first review"
+                    + ("" if has_review else " [dim](Review Due)[/]")
+                )
+                onboarding.update("\n".join(lines))
         except Exception:
             pass
 

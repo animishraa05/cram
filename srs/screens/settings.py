@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from textual.app import ComposeResult
-from textual.containers import Horizontal, Vertical
+from textual.containers import Horizontal, Vertical, VerticalScroll
 from textual.screen import Screen
 from textual.widgets import Input, Label, ListItem, ListView, Static, Switch
 
@@ -27,7 +27,7 @@ class SettingsScreen(Screen):
         with Vertical(id="settings-overlay"):
             yield Static("cram Settings", id="settings-title", classes="col-title")
             with Horizontal(id="settings-columns"):
-                with Vertical(id="config-col"):
+                with VerticalScroll(id="config-col"):
                     yield Static("Config", classes="col-title")
                     yield Label("Vault:")
                     yield Input(placeholder="vault path", id="vault-input")

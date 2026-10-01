@@ -11,6 +11,7 @@ from srs.screens.add_concept import AddConceptScreen
 from srs.screens.add_problem import AddProblemScreen
 from srs.screens.browse import BrowseScreen
 from srs.screens.confirm import ConfirmScreen
+from srs.screens.help import HelpScreen
 from srs.screens.home import HomeScreen
 from srs.screens.review import ReviewScreen
 from srs.screens.settings import SettingsScreen
@@ -33,11 +34,13 @@ class CramApp(App):
         "setup": SetupScreen,
         "settings": SettingsScreen,
         "stats": StatsScreen,
+        "help": HelpScreen,
     }
 
     BINDINGS = [
         ("q", "quit", "Quit"),
         ("t", "push_screen('stats')", "Stats"),
+        ("question_mark", "show_help", "Help"),
     ]
 
     def __init__(self, cli_target: str | None = None) -> None:
@@ -50,6 +53,9 @@ class CramApp(App):
     def _on_quit_confirm(self, result: bool | None) -> None:
         if result:
             self.exit()
+
+    def action_show_help(self) -> None:
+        self.push_screen(HelpScreen())
 
     def on_mount(self) -> None:
         self._register_themes()
@@ -71,9 +77,11 @@ class CramApp(App):
         self.run_worker(self._notify_worker, thread=True, exclusive=True, name="notify")
 
     def _notify_worker(self) -> None:
+        from srs.config import notify_enabled
         from srs.notify import notify_due_silent
 
-        notify_due_silent()
+        if notify_enabled():
+            notify_due_silent()
 
     def _register_themes(self) -> None:
         from textual.theme import Theme as TTheme
@@ -112,7 +120,6 @@ def print_help() -> None:
     from rich.console import Console
     from rich.padding import Padding
     from rich.rule import Rule
-    from rich.style import Style
     from rich.table import Table
     from rich.text import Text
 
